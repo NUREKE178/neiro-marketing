@@ -1,22 +1,33 @@
 import { createClient } from "@libsql/client";
 import path from "node:path";
 import fs from "node:fs";
+import os from "node:os";
 import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-// Local dev / no-Turso-configured fallback: an embedded SQLite file next to
-// the server. In production (Vercel), set TURSO_DATABASE_URL (+
-// TURSO_AUTH_TOKEN) to a remote Turso database — serverless functions have
-// no persistent local disk, so a file: URL only works for local runs.
-const DEFAULT_LOCAL_URL = (() => {
-  const dataDir = path.join(__dirname, "..", "data");
-  fs.mkdirSync(dataDir, { recursive: true });
-  return `file:${path.join(dataDir, "neiro-marketing.sqlite")}`;
-})();
+// Local dev / no-Turso-configured fallback: an embedded SQLite file. In
+// production (Vercel), set TURSO_DATABASE_URL (+ TURSO_AUTH_TOKEN) to a
+// remote Turso database for real persistence — serverless functions have a
+// READ-ONLY filesystem except os.tmpdir(), so without Turso configured we
+// fall back to /tmp (works, but is wiped on every cold start). This must
+// never throw at module load: an uncaught exception here would crash every
+// route, not just DB ones, before any try/catch in routes.ts can run.
+function resolveLocalUrl(): string {
+  try {
+    const dataDir = process.env.VERCEL
+      ? path.join(os.tmpdir(), "neiro-marketing-data")
+      : path.join(__dirname, "..", "data");
+    fs.mkdirSync(dataDir, { recursive: true });
+    return `file:${path.join(dataDir, "neiro-marketing.sqlite")}`;
+  } catch (err) {
+    console.error("Local SQLite fallback path is not writable, using in-memory DB:", err);
+    return ":memory:";
+  }
+}
 
 export const db = createClient({
-  url: process.env.TURSO_DATABASE_URL ?? DEFAULT_LOCAL_URL,
+  url: process.env.TURSO_DATABASE_URL || resolveLocalUrl(),
   authToken: process.env.TURSO_AUTH_TOKEN,
 });
 
