@@ -104,8 +104,7 @@ fun SearchScreen(navController: NavController) {
                                         selected = isSel,
                                         onClick = { selectedRegion = r },
                                         label = { Text(r.display, fontSize = 10.sp, fontWeight = FontWeight.Black) },
-                                        colors = FilterChipDefaults.filterChipColors(selectedContainerColor = PrimaryYellow, selectedLabelColor = Black),
-                                        border = FilterChipDefaults.filterChipBorder(borderColor = Black, borderWidth = 2.dp, selectedBorderColor = Black, selectedBorderWidth = 3.dp)
+                                        colors = FilterChipDefaults.filterChipColors(selectedContainerColor = PrimaryYellow, selectedLabelColor = Black)
                                     )
                                 }
                             }

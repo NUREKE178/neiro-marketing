@@ -24,6 +24,7 @@ import com.socialpulse.android.ui.theme.PrimaryYellow
 import com.socialpulse.android.ui.theme.SocialPulseTheme
 import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalMaterial3Api::class)
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
