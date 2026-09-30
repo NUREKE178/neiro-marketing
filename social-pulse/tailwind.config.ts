@@ -9,20 +9,22 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        primary: "#D9FF3F",
-        black: "#111111",
+        primary: "#DFFF00",
+        neon: "#C4F82A",
+        black: "#000000",
         white: "#FFFFFF",
-        purple: "#A78BFA",
-        pink: "#FF75B5",
-        blue: "#76D7FF",
-        background: "#F5F4EF",
+        purple: "#A58BFF",
+        pink: "#FF85A1",
+        blue: "#70D6FF",
+        background: "#F9F9FB",
         brut: {
-          yellow: "#D9FF3F",
-          black: "#111111",
-          purple: "#A78BFA",
-          pink: "#FF75B5",
-          blue: "#76D7FF",
-          bg: "#F5F4EF"
+          yellow: "#DFFF00",
+          neon: "#C4F82A",
+          black: "#000000",
+          purple: "#A58BFF",
+          pink: "#FF85A1",
+          blue: "#70D6FF",
+          bg: "#F9F9FB"
         }
       },
       fontFamily: {
@@ -30,14 +32,17 @@ const config: Config = {
         display: ['Syne', 'sans-serif'],
       },
       boxShadow: {
-        'brut': '6px 6px 0px 0px #111111',
-        'brut-sm': '4px 4px 0px 0px #111111',
-        'brut-lg': '8px 8px 0px 0px #111111',
-        'brut-hover': '8px 8px 0px 0px #111111',
+        'brut': '4px 4px 0px 0px rgba(0,0,0,1)',
+        'brut-sm': '3px 3px 0px 0px rgba(0,0,0,1)',
+        'brut-lg': '6px 6px 0px 0px rgba(0,0,0,1)',
+        'brut-xl': '8px 8px 0px 0px rgba(0,0,0,1)',
       },
       borderWidth: {
         '3': '3px',
         '4': '4px',
+      },
+      borderRadius: {
+        'brut': '8px',
       }
     },
   },

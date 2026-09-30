@@ -6,8 +6,10 @@ let prisma: any = null
 export async function getPrisma() {
   if (process.env.DATABASE_URL) {
     try {
-      const { PrismaClient } = await import('@prisma/client')
-      if (!prisma) {
+      // @ts-ignore
+      const mod = await import('@prisma/client')
+      const PrismaClient = (mod as any).PrismaClient || (mod as any).default?.PrismaClient
+      if (!prisma && PrismaClient) {
         prisma = new PrismaClient()
       }
       return prisma
