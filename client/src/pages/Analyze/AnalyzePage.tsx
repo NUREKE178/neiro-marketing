@@ -9,6 +9,7 @@ import { PlatformIcon } from "../../components/PlatformIcon";
 import { VideoCard } from "../../components/VideoCard";
 import { ViewsChart } from "../../components/ViewsChart";
 import { SegmentedControl } from "../../components/SegmentedControl";
+import { useLanguage } from "../../i18n/LanguageContext";
 import { api } from "../../lib/api";
 import type { ApiError, City, Creator, Platform, Video } from "../../lib/api";
 import { formatCompactNumber, formatDate } from "../../lib/format";
@@ -17,6 +18,7 @@ import styles from "./AnalyzePage.module.css";
 type SortMode = "views" | "recent";
 
 export function AnalyzePage() {
+  const { t } = useLanguage();
   const { platform, username } = useParams<{ platform: Platform; username: string }>();
   const [creator, setCreator] = useState<Creator | null>(null);
   const [videos, setVideos] = useState<Video[]>([]);
@@ -97,7 +99,7 @@ export function AnalyzePage() {
   if (loading) {
     return (
       <div className="container">
-        <Spinner label={`@${username} талдануда…`} />
+        <Spinner label={t("analyze.loading", { username: username ?? "" })} />
       </div>
     );
   }
@@ -109,16 +111,12 @@ export function AnalyzePage() {
           tone="danger"
           title={
             errorCode === "PROVIDER_NOT_CONFIGURED"
-              ? "Дерек провайдері теңшелмеген"
+              ? t("analyze.errProviderTitle")
               : errorCode === "PROVIDER_REQUEST_FAILED"
-                ? "Провайдерден дерек алу сәтсіз аяқталды"
-                : "Аккаунт табылмады немесе қате орын алды"
+                ? t("analyze.errRequestTitle")
+                : t("analyze.errGenericTitle")
           }
-          description={
-            errorCode === "PROVIDER_NOT_CONFIGURED"
-              ? "Серверде RAPIDAPI_KEY орнатылмаған. server/.env файлына кілтті қосыңыз — толығырақ server/README.md ішінде."
-              : errorMsg
-          }
+          description={errorCode === "PROVIDER_NOT_CONFIGURED" ? t("analyze.errProviderDesc") : errorMsg}
         >
           {errorDetail && <p className={styles.errorDetail}>{errorDetail}</p>}
         </EmptyState>
@@ -132,8 +130,7 @@ export function AnalyzePage() {
     <div className={["container", styles.page].join(" ")}>
       {errorCode === "STALE_NO_PROVIDER" && (
         <Card tint="secondary" padding="sm" className={styles.staleBanner}>
-          Деректер соңғы синхрондаудан бері жаңартылмады — провайдер теңшелмеген. Көрсетілгені{" "}
-          {formatDate(creator.last_synced_at)} мезгіліндегі кэш.
+          {t("analyze.staleBanner", { date: formatDate(creator.last_synced_at) })}
         </Card>
       )}
 
@@ -154,7 +151,9 @@ export function AnalyzePage() {
             <span className={styles.handle}>@{creator.username}</span>
             {creator.bio && <p className={styles.bio}>{creator.bio}</p>}
             <div className={styles.badgeRow}>
-              <Badge tone="primary">{formatCompactNumber(creator.followers)} жазылушы</Badge>
+              <Badge tone="primary">
+                {formatCompactNumber(creator.followers)} {t("common.followers")}
+              </Badge>
               <RegionEditor creator={creator} cities={cities} onChange={setCreator} />
             </div>
           </div>
@@ -162,34 +161,39 @@ export function AnalyzePage() {
       </Card>
 
       <div className={styles.stats}>
-        <StatTile label="Жалпы views" value={formatCompactNumber(stats.totalViews)} tint="primary" />
-        <StatTile label="Жалпы likes" value={formatCompactNumber(stats.totalLikes)} tint="secondary" />
-        <StatTile label="Орташа views/видео" value={formatCompactNumber(stats.avgViews)} />
-        <StatTile label="Engagement rate" value={`${stats.engagement}%`} tint="lime" sub="(likes+comments)/views" />
-        <StatTile label="Видео саны" value={String(videos.length)} />
+        <StatTile label={t("analyze.statTotalViews")} value={formatCompactNumber(stats.totalViews)} tint="primary" />
+        <StatTile label={t("analyze.statTotalLikes")} value={formatCompactNumber(stats.totalLikes)} tint="secondary" />
+        <StatTile label={t("analyze.statAvgViews")} value={formatCompactNumber(stats.avgViews)} />
+        <StatTile
+          label={t("analyze.statEngagement")}
+          value={`${stats.engagement}%`}
+          tint="lime"
+          sub={t("analyze.statEngagementSub")}
+        />
+        <StatTile label={t("analyze.statVideoCount")} value={String(videos.length)} />
       </div>
 
       {chartPoints.length > 1 && (
         <Card padding="md">
-          <h3 className={styles.sectionTitle}>Views динамикасы (соңғы {chartPoints.length} видео)</h3>
+          <h3 className={styles.sectionTitle}>{t("analyze.chartTitle", { count: chartPoints.length })}</h3>
           <ViewsChart points={chartPoints} />
         </Card>
       )}
 
       <div className={styles.videoHead}>
-        <h2 className={styles.sectionTitle}>Видеолар</h2>
+        <h2 className={styles.sectionTitle}>{t("analyze.videosTitle")}</h2>
         <SegmentedControl
           value={sort}
           onChange={setSort}
           options={[
-            { value: "views", label: "Көп қаралған" },
-            { value: "recent", label: "Жаңа" },
+            { value: "views", label: t("analyze.sortViews") },
+            { value: "recent", label: t("analyze.sortRecent") },
           ]}
         />
       </div>
 
       {sortedVideos.length === 0 ? (
-        <EmptyState title="Видео табылмады" description="Бұл аккаунттың жария видеосы жоқ немесе провайдер қайтармады." />
+        <EmptyState title={t("analyze.noVideosTitle")} description={t("analyze.noVideosDesc")} />
       ) : (
         <div className={styles.grid}>
           {sortedVideos.map((v, i) => (
@@ -210,16 +214,17 @@ function RegionEditor({
   cities: City[];
   onChange: (c: Creator) => void;
 }) {
+  const { t } = useLanguage();
   const [saving, setSaving] = useState(false);
 
   return (
     <div className={styles.regionEditor}>
       {creator.region ? (
         <Badge tone={creator.region_source === "manual" ? "accent" : "outline"}>
-          📍 {creator.region} {creator.region_source === "inferred" && "(болжам)"}
+          📍 {creator.region} {creator.region_source === "inferred" && t("analyze.regionInferred")}
         </Badge>
       ) : (
-        <Badge tone="outline">Аймақ белгісіз</Badge>
+        <Badge tone="outline">{t("analyze.regionUnknown")}</Badge>
       )}
       <select
         className={styles.regionSelect}
@@ -236,7 +241,7 @@ function RegionEditor({
           }
         }}
       >
-        <option value="">Аймақты өзгерту…</option>
+        <option value="">{t("analyze.changeRegion")}</option>
         {cities.map((c) => (
           <option key={c.id} value={c.id}>
             {c.name}

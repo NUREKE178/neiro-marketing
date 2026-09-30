@@ -9,6 +9,7 @@ import { Spinner } from "../../components/Spinner";
 import { EmptyState } from "../../components/EmptyState";
 import { CreatorCard } from "../../components/CreatorCard";
 import { useGeolocation } from "../../hooks/useGeolocation";
+import { useLanguage } from "../../i18n/LanguageContext";
 import { api } from "../../lib/api";
 import type { City, Platform, SearchResult } from "../../lib/api";
 import styles from "./DiscoverPage.module.css";
@@ -16,6 +17,7 @@ import styles from "./DiscoverPage.module.css";
 type PlatformFilter = Platform | "all";
 
 export function DiscoverPage() {
+  const { t } = useLanguage();
   const [params, setParams] = useSearchParams();
   const keyword = params.get("keyword") ?? "";
   const [keywordInput, setKeywordInput] = useState(keyword);
@@ -47,8 +49,9 @@ export function DiscoverPage() {
         platform: platform === "all" ? undefined : platform,
       })
       .then((r) => setResults(r.results))
-      .catch(() => setError("Іздеу кезінде қате орын алды."))
+      .catch(() => setError(t("discover.error")))
       .finally(() => setLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [keyword, regionName, platform]);
 
   const hasRegion = geo.status === "resolved";
@@ -62,23 +65,20 @@ export function DiscoverPage() {
   return (
     <div className={["container", styles.page].join(" ")}>
       <div className={styles.headRow}>
-        <h1 className={styles.title}>Креатор іздеу</h1>
-        <p className={styles.subtitle}>
-          Ниша бойынша (мысалы: «ойыншық», «сұлулық») немесе тек аймақ бойынша, талданған аккаунттар арасынан
-          ізде.
-        </p>
+        <h1 className={styles.title}>{t("discover.title")}</h1>
+        <p className={styles.subtitle}>{t("discover.subtitle")}</p>
       </div>
 
       <Card padding="md" className={styles.controls}>
         <div className={styles.searchRow}>
           <Input
-            placeholder="Ниша немесе кілт сөз (бос қалдыруға болады)"
+            placeholder={t("discover.keywordPlaceholder")}
             value={keywordInput}
             onChange={(e) => setKeywordInput(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && submitKeyword()}
           />
           <Button variant="secondary" onClick={submitKeyword}>
-            Іздеу
+            {t("discover.searchBtn")}
           </Button>
         </div>
 
@@ -87,7 +87,7 @@ export function DiscoverPage() {
           onChange={setPlatform}
           tint="accent"
           options={[
-            { value: "all", label: "Барлығы" },
+            { value: "all", label: t("discover.platformAll") },
             { value: "instagram", label: "Instagram" },
             { value: "tiktok", label: "TikTok" },
           ]}
@@ -96,14 +96,10 @@ export function DiscoverPage() {
         <div className={styles.regionRow}>
           {!hasRegion ? (
             <>
-              <Button
-                variant="dark"
-                onClick={geo.locate}
-                disabled={geo.status === "locating"}
-              >
-                {geo.status === "locating" ? "Анықталуда…" : "📍 Орналасуымды анықта"}
+              <Button variant="dark" onClick={geo.locate} disabled={geo.status === "locating"}>
+                {geo.status === "locating" ? t("discover.locating") : t("discover.locateBtn")}
               </Button>
-              <span className={styles.orText}>немесе қолмен таңда:</span>
+              <span className={styles.orText}>{t("discover.orManual")}</span>
               <select
                 className={styles.select}
                 defaultValue=""
@@ -113,7 +109,7 @@ export function DiscoverPage() {
                 }}
               >
                 <option value="" disabled>
-                  Қала таңдау…
+                  {t("discover.cityPlaceholder")}
                 </option>
                 {cities.map((c) => (
                   <option key={c.id} value={c.id}>
@@ -126,7 +122,7 @@ export function DiscoverPage() {
             <>
               <Badge tone="accent">📍 {regionName}</Badge>
               <button className={styles.changeLink} onClick={geo.reset}>
-                аймақты өзгерту
+                {t("discover.changeRegion")}
               </button>
             </>
           )}
@@ -134,19 +130,17 @@ export function DiscoverPage() {
         </div>
       </Card>
 
-      {loading && <Spinner label="Ізделуде…" />}
+      {loading && <Spinner label={t("discover.loading")} />}
 
-      {!loading && error && (
-        <EmptyState tone="danger" title="Қате орын алды" description={error} />
-      )}
+      {!loading && error && <EmptyState tone="danger" title={t("common.errorTitle")} description={error} />}
 
       {!loading && !error && results && results.length === 0 && (
         <EmptyState
-          title="Бұл критерийлер бойынша креатор табылмады"
+          title={t("discover.emptyTitle")}
           description={
             hasRegion
-              ? `«${regionName}» аймағында сәйкес аккаунт әлі талданбаған. Аймақ сүзгісін алып тастап көріңіз немесе аккаунтты өзің талда — ол дерекқорға қосылады.`
-              : "Іздеу сөзін өзгертіп көріңіз немесе аймақ бойынша сүзгіні қосыңыз."
+              ? t("discover.emptyWithRegion", { region: regionName ?? "" })
+              : t("discover.emptyNoRegion")
           }
         />
       )}
@@ -171,10 +165,7 @@ export function DiscoverPage() {
       )}
 
       {!loading && !error && resultsWithoutRegionCount > 0 && (
-        <p className={styles.footnote}>
-          Дерекқор «Аккаунтты талда» арқылы тексерілген шоттармен толықтырылады — неғұрлым көп аккаунт
-          талданса, соғұрлым іздеу нәтижесі бай болады.
-        </p>
+        <p className={styles.footnote}>{t("discover.footnote")}</p>
       )}
     </div>
   );

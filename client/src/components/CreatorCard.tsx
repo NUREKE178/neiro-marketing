@@ -3,6 +3,7 @@ import { Card } from "./Card";
 import { Badge } from "./Badge";
 import { PlatformIcon } from "./PlatformIcon";
 import { formatCompactNumber } from "../lib/format";
+import { useLanguage } from "../i18n/LanguageContext";
 import type { Platform } from "../lib/api";
 import styles from "./CreatorCard.module.css";
 
@@ -32,6 +33,7 @@ export function CreatorCard({
   rank,
 }: CreatorCardProps) {
   const navigate = useNavigate();
+  const { t } = useLanguage();
 
   return (
     <Card
@@ -60,7 +62,9 @@ export function CreatorCard({
 
       <div className={styles.badges}>
         {region && <Badge tone="accent">{region}</Badge>}
-        <Badge tone="outline">{formatCompactNumber(followers)} жазылушы</Badge>
+        <Badge tone="outline">
+          {formatCompactNumber(followers)} {t("common.followers")}
+        </Badge>
       </div>
 
       {nicheTags.length > 0 && (

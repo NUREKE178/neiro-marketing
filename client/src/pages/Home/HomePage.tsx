@@ -7,6 +7,7 @@ import { Input } from "../../components/Input";
 import { SegmentedControl } from "../../components/SegmentedControl";
 import { PlatformIcon } from "../../components/PlatformIcon";
 import { extractHandle } from "../../lib/handle";
+import { useLanguage } from "../../i18n/LanguageContext";
 import type { Platform } from "../../lib/api";
 import styles from "./HomePage.module.css";
 
@@ -14,6 +15,7 @@ type Mode = "analyze" | "discover";
 
 export function HomePage() {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const [mode, setMode] = useState<Mode>("analyze");
   const [platform, setPlatform] = useState<Platform>("instagram");
   const [query, setQuery] = useState("");
@@ -39,22 +41,20 @@ export function HomePage() {
     <div>
       <section className={styles.hero}>
         <div className={[styles.heroInner, "container"].join(" ")}>
-          <span className={styles.kicker}>КРЕАТОР АНАЛИТИКАСЫ · KZ</span>
+          <span className={styles.kicker}>{t("home.kicker")}</span>
           <h1 className={styles.title}>
-            Аймағыңдағы ең <span className={styles.highlight}>күшті креаторды</span> тап
+            {t("home.titleBefore")} <span className={styles.highlight}>{t("home.titleHighlight")}</span>{" "}
+            {t("home.titleAfter")}
           </h1>
-          <p className={styles.subtitle}>
-            Instagram/TikTok аккаунтын талда — видеолардың views/likes статистикасын көр. Немесе ниша бойынша
-            іздеп, өз өңіріңдегі белсенді блогерлерден таңда.
-          </p>
+          <p className={styles.subtitle}>{t("home.subtitle")}</p>
 
           <Card padding="lg" className={styles.searchCard}>
             <SegmentedControl
               value={mode}
               onChange={setMode}
               options={[
-                { value: "analyze", label: "Аккаунтты талда" },
-                { value: "discover", label: "Креатор ізде" },
+                { value: "analyze", label: t("home.modeAnalyze") },
+                { value: "discover", label: t("home.modeDiscover") },
               ]}
             />
 
@@ -69,7 +69,7 @@ export function HomePage() {
                     { value: "tiktok", label: "TikTok", icon: <PlatformIcon platform="tiktok" size={16} /> },
                   ]}
                 />
-                {mode === "discover" && <span className={styles.hint}>ниша барлық платформалардан ізделеді</span>}
+                {mode === "discover" && <span className={styles.hint}>{t("home.discoverHint")}</span>}
               </div>
 
               <div className={styles.inputRow}>
@@ -80,16 +80,14 @@ export function HomePage() {
                     setQuery(e.target.value);
                     setTouched(false);
                   }}
-                  placeholder={
-                    mode === "analyze" ? "@username немесе профиль сілтемесі" : "мысалы: ойыншық, сұлулық, ресторан…"
-                  }
+                  placeholder={mode === "analyze" ? t("home.placeholderAnalyze") : t("home.placeholderDiscover")}
                   aria-invalid={touched}
                 />
                 <Button type="submit" size="lg" variant={mode === "analyze" ? "primary" : "secondary"}>
-                  {mode === "analyze" ? "Талдау" : "Іздеу"}
+                  {mode === "analyze" ? t("home.btnAnalyze") : t("home.btnDiscover")}
                 </Button>
               </div>
-              {touched && <p className={styles.error}>Алдымен нені іздейтініңізді жазыңыз.</p>}
+              {touched && <p className={styles.error}>{t("home.errorEmpty")}</p>}
             </form>
           </Card>
         </div>
@@ -97,18 +95,16 @@ export function HomePage() {
 
       <section className={[styles.features, "container"].join(" ")}>
         <Card tint="primary" padding="lg">
-          <h3 className={styles.featureTitle}>Толық видео статистика</h3>
-          <p className={styles.featureText}>
-            Әр аккаунттың барлық видеосы: views, likes, comments, күні — views бойынша сұрыпталған.
-          </p>
+          <h3 className={styles.featureTitle}>{t("home.feature1Title")}</h3>
+          <p className={styles.featureText}>{t("home.feature1Text")}</p>
         </Card>
         <Card tint="secondary" padding="lg">
-          <h3 className={styles.featureTitle}>Геолокация бойынша сәйкестік</h3>
-          <p className={styles.featureText}>Іздеу кезінде орналасуыңды анықтап, сол өңірдегі креаторларды ұсынамыз.</p>
+          <h3 className={styles.featureTitle}>{t("home.feature2Title")}</h3>
+          <p className={styles.featureText}>{t("home.feature2Text")}</p>
         </Card>
         <Card tint="accent" padding="lg">
-          <h3 className={styles.featureTitle}>Апталық Топ-5 рейтинг</h3>
-          <p className={styles.featureText}>Кез келген күн аралығында ең көп қаралым/лайк жинаған аккаунттар.</p>
+          <h3 className={styles.featureTitle}>{t("home.feature3Title")}</h3>
+          <p className={styles.featureText}>{t("home.feature3Text")}</p>
         </Card>
       </section>
     </div>

@@ -1,9 +1,11 @@
 import { Card } from "./Card";
 import { formatCompactNumber, formatDate } from "../lib/format";
+import { useLanguage } from "../i18n/LanguageContext";
 import type { Video } from "../lib/api";
 import styles from "./VideoCard.module.css";
 
 export function VideoCard({ video, rank }: { video: Video; rank?: number }) {
+  const { t } = useLanguage();
   const content = (
     <>
       <div className={styles.thumbWrap}>
@@ -14,7 +16,7 @@ export function VideoCard({ video, rank }: { video: Video; rank?: number }) {
         )}
         {rank && <span className={styles.rank}>#{rank}</span>}
       </div>
-      <p className={styles.caption}>{video.caption || "Сипаттама жоқ"}</p>
+      <p className={styles.caption}>{video.caption || t("video.noCaption")}</p>
       <div className={styles.metrics}>
         <span>
           <b>{formatCompactNumber(video.views)}</b> views

@@ -4,6 +4,7 @@ import { SegmentedControl } from "../../components/SegmentedControl";
 import { Spinner } from "../../components/Spinner";
 import { EmptyState } from "../../components/EmptyState";
 import { CreatorCard } from "../../components/CreatorCard";
+import { useLanguage } from "../../i18n/LanguageContext";
 import { api } from "../../lib/api";
 import type { City, LeaderboardEntry, Platform } from "../../lib/api";
 import styles from "./LeaderboardPage.module.css";
@@ -11,7 +12,10 @@ import styles from "./LeaderboardPage.module.css";
 type RangePreset = "1" | "7" | "30" | "custom";
 type PlatformFilter = Platform | "all";
 
+const LOCALE: Record<string, string> = { kk: "kk-KZ", ru: "ru-RU", en: "en-US" };
+
 export function LeaderboardPage() {
+  const { t, lang } = useLanguage();
   const [preset, setPreset] = useState<RangePreset>("7");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
@@ -45,28 +49,29 @@ export function LeaderboardPage() {
         setResults(r.results);
         setRange(r.range);
       })
-      .catch(() => setError("Рейтингті жүктеу кезінде қате орын алды."))
+      .catch(() => setError(t("leaderboard.error")))
       .finally(() => setLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [preset, from, to, metric, platform, region]);
 
   return (
     <div className={["container", styles.page].join(" ")}>
       <div className={styles.headRow}>
-        <h1 className={styles.title}>Топ-5 белсенді аккаунт</h1>
-        <p className={styles.subtitle}>Таңдалған күн аралығында ең көп қаралым немесе лайк жинаған креаторлар.</p>
+        <h1 className={styles.title}>{t("leaderboard.title")}</h1>
+        <p className={styles.subtitle}>{t("leaderboard.subtitle")}</p>
       </div>
 
       <Card padding="md" className={styles.controls}>
         <div className={styles.row}>
-          <span className={styles.label}>Кезең</span>
+          <span className={styles.label}>{t("leaderboard.period")}</span>
           <SegmentedControl
             value={preset}
             onChange={setPreset}
             options={[
-              { value: "1", label: "24 сағат" },
-              { value: "7", label: "7 күн" },
-              { value: "30", label: "30 күн" },
-              { value: "custom", label: "Таңдау" },
+              { value: "1", label: t("leaderboard.period24h") },
+              { value: "7", label: t("leaderboard.period7d") },
+              { value: "30", label: t("leaderboard.period30d") },
+              { value: "custom", label: t("leaderboard.periodCustom") },
             ]}
           />
         </div>
@@ -74,37 +79,37 @@ export function LeaderboardPage() {
         {preset === "custom" && (
           <div className={styles.dateRow}>
             <label>
-              Бастап
+              {t("leaderboard.from")}
               <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className={styles.date} />
             </label>
             <label>
-              Дейін
+              {t("leaderboard.to")}
               <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className={styles.date} />
             </label>
           </div>
         )}
 
         <div className={styles.row}>
-          <span className={styles.label}>Метрика</span>
+          <span className={styles.label}>{t("leaderboard.metric")}</span>
           <SegmentedControl
             value={metric}
             onChange={setMetric}
             tint="secondary"
             options={[
-              { value: "views", label: "Views" },
-              { value: "likes", label: "Likes" },
+              { value: "views", label: t("leaderboard.metricViews") },
+              { value: "likes", label: t("leaderboard.metricLikes") },
             ]}
           />
         </div>
 
         <div className={styles.row}>
-          <span className={styles.label}>Платформа</span>
+          <span className={styles.label}>{t("leaderboard.platform")}</span>
           <SegmentedControl
             value={platform}
             onChange={setPlatform}
             tint="accent"
             options={[
-              { value: "all", label: "Барлығы" },
+              { value: "all", label: t("discover.platformAll") },
               { value: "instagram", label: "Instagram" },
               { value: "tiktok", label: "TikTok" },
             ]}
@@ -112,9 +117,9 @@ export function LeaderboardPage() {
         </div>
 
         <div className={styles.row}>
-          <span className={styles.label}>Аймақ</span>
+          <span className={styles.label}>{t("leaderboard.region")}</span>
           <select className={styles.select} value={region} onChange={(e) => setRegion(e.target.value)}>
-            <option value="">Барлық аймақтар</option>
+            <option value="">{t("leaderboard.allRegions")}</option>
             {cities.map((c) => (
               <option key={c.id} value={c.name}>
                 {c.name}
@@ -126,19 +131,17 @@ export function LeaderboardPage() {
 
       {range && (
         <p className={styles.rangeText}>
-          {new Date(range.from).toLocaleDateString("kk-KZ")} — {new Date(range.to).toLocaleDateString("kk-KZ")}
+          {new Date(range.from).toLocaleDateString(LOCALE[lang])} —{" "}
+          {new Date(range.to).toLocaleDateString(LOCALE[lang])}
         </p>
       )}
 
-      {loading && <Spinner label="Рейтинг жүктелуде…" />}
+      {loading && <Spinner label={t("leaderboard.loading")} />}
 
-      {!loading && error && <EmptyState tone="danger" title="Қате орын алды" description={error} />}
+      {!loading && error && <EmptyState tone="danger" title={t("common.errorTitle")} description={error} />}
 
       {!loading && !error && results && results.length === 0 && (
-        <EmptyState
-          title="Бұл кезеңде дерек жоқ"
-          description="Таңдалған күн аралығында сәйкес видео табылмады. Кезеңді ұзартыңыз немесе жаңа аккаунттарды талдаңыз."
-        />
+        <EmptyState title={t("leaderboard.emptyTitle")} description={t("leaderboard.emptyDesc")} />
       )}
 
       {!loading && !error && results && results.length > 0 && (
