@@ -59,8 +59,14 @@ class ApiError extends Error {
   }
 }
 
+// Web build (Vercel): relative "/api" hits the same-origin serverless
+// function — leave unset. Native builds (Android/Windows) have no origin of
+// their own, so VITE_API_BASE_URL must point at the deployed backend, e.g.
+// https://your-app.vercel.app/api (set at build time, see client/README.md).
+const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "/api";
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`/api${path}`, {
+  const res = await fetch(`${API_BASE}${path}`, {
     headers: { "Content-Type": "application/json" },
     ...init,
   });

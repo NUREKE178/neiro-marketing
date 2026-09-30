@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { db } from "./db.js";
+import { db, ensureSchema } from "./db.js";
 import { NormalizedProfile } from "./providers/types.js";
 import { buildSearchBlob, deriveNicheTags } from "./niche.js";
 import { inferRegionFromText } from "./regions.js";
@@ -33,14 +33,12 @@ export interface VideoRecord {
   fetched_at: string;
 }
 
-/** Upserts a freshly-fetched provider profile (+videos) into the local DB. */
-export function upsertCreatorFromProfile(profile: NormalizedProfile): CreatorRecord {
+/** Upserts a freshly-fetched provider profile (+videos) into the DB. */
+export async function upsertCreatorFromProfile(profile: NormalizedProfile): Promise<CreatorRecord> {
+  await ensureSchema();
   const now = new Date().toISOString();
-  const existing = db
-    .prepare<[string, string], CreatorRecord>(
-      `SELECT * FROM creators WHERE platform = ? AND username = ?`,
-    )
-    .get(profile.platform, profile.username);
+
+  const existing = await getCreator(profile.platform, profile.username);
 
   const nicheTags = deriveNicheTags(profile.videos.map((v) => v.caption));
   const inferredCity = existing?.region_source === "manual" ? null : inferRegionFromText(profile.bio);
@@ -49,101 +47,108 @@ export function upsertCreatorFromProfile(profile: NormalizedProfile): CreatorRec
   const region = existing?.region_source === "manual" ? existing.region : (inferredCity?.name ?? existing?.region ?? null);
   const regionSource: CreatorRecord["region_source"] =
     existing?.region_source === "manual" ? "manual" : inferredCity ? "inferred" : "unset";
-
-  db.prepare(
-    `INSERT INTO creators (id, platform, username, display_name, avatar_url, bio, followers, region, region_source, niche_tags, search_blob, created_at, last_synced_at)
-     VALUES (@id, @platform, @username, @displayName, @avatarUrl, @bio, @followers, @region, @regionSource, @nicheTags, @searchBlob, @createdAt, @lastSyncedAt)
-     ON CONFLICT(platform, username) DO UPDATE SET
-       display_name = excluded.display_name,
-       avatar_url = excluded.avatar_url,
-       bio = excluded.bio,
-       followers = excluded.followers,
-       region = excluded.region,
-       region_source = excluded.region_source,
-       niche_tags = excluded.niche_tags,
-       search_blob = excluded.search_blob,
-       last_synced_at = excluded.last_synced_at`,
-  ).run({
-    id,
-    platform: profile.platform,
+  const searchBlob = buildSearchBlob({
     username: profile.username,
     displayName: profile.displayName,
-    avatarUrl: profile.avatarUrl,
     bio: profile.bio,
-    followers: profile.followers,
-    region,
-    regionSource,
-    nicheTags: JSON.stringify(nicheTags),
-    searchBlob: buildSearchBlob({
-      username: profile.username,
-      displayName: profile.displayName,
-      bio: profile.bio,
-      nicheTags,
-      captions: profile.videos.map((v) => v.caption),
-    }),
-    createdAt: existing?.created_at ?? now,
-    lastSyncedAt: now,
+    nicheTags,
+    captions: profile.videos.map((v) => v.caption),
   });
 
-  const insertVideo = db.prepare(
-    `INSERT INTO videos (id, creator_id, external_id, url, thumbnail_url, caption, views, likes, comments, posted_at, fetched_at)
-     VALUES (@id, @creatorId, @externalId, @url, @thumbnailUrl, @caption, @views, @likes, @comments, @postedAt, @fetchedAt)
-     ON CONFLICT(creator_id, external_id) DO UPDATE SET
-       url = excluded.url,
-       thumbnail_url = excluded.thumbnail_url,
-       caption = excluded.caption,
-       views = excluded.views,
-       likes = excluded.likes,
-       comments = excluded.comments,
-       posted_at = excluded.posted_at,
-       fetched_at = excluded.fetched_at`,
-  );
-
-  const insertMany = db.transaction((videos: NormalizedProfile["videos"]) => {
-    for (const v of videos) {
-      insertVideo.run({
-        id: randomUUID(),
-        creatorId: id,
-        externalId: v.externalId,
-        url: v.url,
-        thumbnailUrl: v.thumbnailUrl,
-        caption: v.caption,
-        views: v.views,
-        likes: v.likes,
-        comments: v.comments,
-        postedAt: v.postedAt,
-        fetchedAt: now,
-      });
-    }
+  await db.execute({
+    sql: `INSERT INTO creators (id, platform, username, display_name, avatar_url, bio, followers, region, region_source, niche_tags, search_blob, created_at, last_synced_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          ON CONFLICT(platform, username) DO UPDATE SET
+            display_name = excluded.display_name,
+            avatar_url = excluded.avatar_url,
+            bio = excluded.bio,
+            followers = excluded.followers,
+            region = excluded.region,
+            region_source = excluded.region_source,
+            niche_tags = excluded.niche_tags,
+            search_blob = excluded.search_blob,
+            last_synced_at = excluded.last_synced_at`,
+    args: [
+      id,
+      profile.platform,
+      profile.username,
+      profile.displayName,
+      profile.avatarUrl,
+      profile.bio,
+      profile.followers,
+      region,
+      regionSource,
+      JSON.stringify(nicheTags),
+      searchBlob,
+      existing?.created_at ?? now,
+      now,
+    ],
   });
-  insertMany(profile.videos);
 
-  return db
-    .prepare<[string], CreatorRecord>(`SELECT * FROM creators WHERE id = ?`)
-    .get(id)!;
+  const statements = profile.videos.map((v) => ({
+    sql: `INSERT INTO videos (id, creator_id, external_id, url, thumbnail_url, caption, views, likes, comments, posted_at, fetched_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          ON CONFLICT(creator_id, external_id) DO UPDATE SET
+            url = excluded.url,
+            thumbnail_url = excluded.thumbnail_url,
+            caption = excluded.caption,
+            views = excluded.views,
+            likes = excluded.likes,
+            comments = excluded.comments,
+            posted_at = excluded.posted_at,
+            fetched_at = excluded.fetched_at`,
+    args: [
+      randomUUID(),
+      id,
+      v.externalId,
+      v.url,
+      v.thumbnailUrl,
+      v.caption,
+      v.views,
+      v.likes,
+      v.comments,
+      v.postedAt,
+      now,
+    ],
+  }));
+
+  if (statements.length > 0) {
+    await db.batch(statements, "write");
+  }
+
+  return (await getCreatorById(id))!;
 }
 
-export function getCreator(platform: string, username: string): CreatorRecord | undefined {
-  return db
-    .prepare<[string, string], CreatorRecord>(
-      `SELECT * FROM creators WHERE platform = ? AND username = ?`,
-    )
-    .get(platform, username);
+export async function getCreator(platform: string, username: string): Promise<CreatorRecord | undefined> {
+  await ensureSchema();
+  const rs = await db.execute({
+    sql: `SELECT * FROM creators WHERE platform = ? AND username = ?`,
+    args: [platform, username],
+  });
+  return rs.rows[0] as unknown as CreatorRecord | undefined;
 }
 
-export function getVideosForCreator(creatorId: string): VideoRecord[] {
-  return db
-    .prepare<[string], VideoRecord>(
-      `SELECT * FROM videos WHERE creator_id = ? ORDER BY views DESC`,
-    )
-    .all(creatorId);
+async function getCreatorById(id: string): Promise<CreatorRecord | undefined> {
+  const rs = await db.execute({ sql: `SELECT * FROM creators WHERE id = ?`, args: [id] });
+  return rs.rows[0] as unknown as CreatorRecord | undefined;
 }
 
-export function setCreatorRegion(creatorId: string, region: string): CreatorRecord | undefined {
-  db.prepare(
-    `UPDATE creators SET region = ?, region_source = 'manual' WHERE id = ?`,
-  ).run(region, creatorId);
-  return db.prepare<[string], CreatorRecord>(`SELECT * FROM creators WHERE id = ?`).get(creatorId);
+export async function getVideosForCreator(creatorId: string): Promise<VideoRecord[]> {
+  await ensureSchema();
+  const rs = await db.execute({
+    sql: `SELECT * FROM videos WHERE creator_id = ? ORDER BY views DESC`,
+    args: [creatorId],
+  });
+  return rs.rows as unknown as VideoRecord[];
+}
+
+export async function setCreatorRegion(creatorId: string, region: string): Promise<CreatorRecord | undefined> {
+  await ensureSchema();
+  await db.execute({
+    sql: `UPDATE creators SET region = ?, region_source = 'manual' WHERE id = ?`,
+    args: [region, creatorId],
+  });
+  return getCreatorById(creatorId);
 }
 
 export interface SearchParams {
@@ -152,35 +157,38 @@ export interface SearchParams {
   platform?: string;
 }
 
-export function searchCreators(params: SearchParams): (CreatorRecord & { total_views: number; total_likes: number })[] {
+export async function searchCreators(
+  params: SearchParams,
+): Promise<(CreatorRecord & { total_views: number; total_likes: number })[]> {
+  await ensureSchema();
   const clauses: string[] = [];
-  const args: Record<string, unknown> = {};
+  const args: (string | number)[] = [];
 
   if (params.keyword) {
-    clauses.push(`c.search_blob LIKE @keyword`);
-    args.keyword = `%${params.keyword.trim().toLocaleLowerCase("ru")}%`;
+    clauses.push(`c.search_blob LIKE ?`);
+    args.push(`%${params.keyword.trim().toLocaleLowerCase("ru")}%`);
   }
   if (params.region) {
-    clauses.push(`c.region = @region`);
-    args.region = params.region;
+    clauses.push(`c.region = ?`);
+    args.push(params.region);
   }
   if (params.platform) {
-    clauses.push(`c.platform = @platform`);
-    args.platform = params.platform;
+    clauses.push(`c.platform = ?`);
+    args.push(params.platform);
   }
 
   const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
 
-  return db
-    .prepare(
-      `SELECT c.*, COALESCE(SUM(v.views), 0) AS total_views, COALESCE(SUM(v.likes), 0) AS total_likes
-       FROM creators c
-       LEFT JOIN videos v ON v.creator_id = c.id
-       ${where}
-       GROUP BY c.id
-       ORDER BY total_views DESC`,
-    )
-    .all(args) as (CreatorRecord & { total_views: number; total_likes: number })[];
+  const rs = await db.execute({
+    sql: `SELECT c.*, COALESCE(SUM(v.views), 0) AS total_views, COALESCE(SUM(v.likes), 0) AS total_likes
+          FROM creators c
+          LEFT JOIN videos v ON v.creator_id = c.id
+          ${where}
+          GROUP BY c.id
+          ORDER BY total_views DESC`,
+    args,
+  });
+  return rs.rows as unknown as (CreatorRecord & { total_views: number; total_likes: number })[];
 }
 
 export interface LeaderboardParams {
@@ -192,42 +200,44 @@ export interface LeaderboardParams {
   limit?: number;
 }
 
-export function leaderboard(params: LeaderboardParams) {
-  const clauses: string[] = ["v.posted_at IS NOT NULL", "v.posted_at BETWEEN @from AND @to"];
-  const args: Record<string, unknown> = { from: params.fromIso, to: params.toIso, limit: params.limit ?? 5 };
+export async function leaderboard(params: LeaderboardParams) {
+  await ensureSchema();
+  const clauses: string[] = ["v.posted_at IS NOT NULL", "v.posted_at BETWEEN ? AND ?"];
+  const args: (string | number)[] = [params.fromIso, params.toIso];
 
   if (params.platform) {
-    clauses.push(`c.platform = @platform`);
-    args.platform = params.platform;
+    clauses.push(`c.platform = ?`);
+    args.push(params.platform);
   }
   if (params.region) {
-    clauses.push(`c.region = @region`);
-    args.region = params.region;
+    clauses.push(`c.region = ?`);
+    args.push(params.region);
   }
 
-  const metricCol = params.metric === "likes" ? "v.likes" : "v.views";
+  const orderCol = params.metric === "likes" ? "period_likes" : "period_views";
+  args.push(params.limit ?? 5);
 
-  return db
-    .prepare(
-      `SELECT c.*,
-              COALESCE(SUM(v.views), 0) AS period_views,
-              COALESCE(SUM(v.likes), 0) AS period_likes,
-              COALESCE(SUM(v.comments), 0) AS period_comments,
-              COUNT(v.id) AS period_video_count,
-              MAX(${metricCol}) AS top_video_metric
-       FROM creators c
-       JOIN videos v ON v.creator_id = c.id
-       WHERE ${clauses.join(" AND ")}
-       GROUP BY c.id
-       ORDER BY ${params.metric === "likes" ? "period_likes" : "period_views"} DESC
-       LIMIT @limit`,
-    )
-    .all(args);
+  const rs = await db.execute({
+    sql: `SELECT c.*,
+                 COALESCE(SUM(v.views), 0) AS period_views,
+                 COALESCE(SUM(v.likes), 0) AS period_likes,
+                 COALESCE(SUM(v.comments), 0) AS period_comments,
+                 COUNT(v.id) AS period_video_count
+          FROM creators c
+          JOIN videos v ON v.creator_id = c.id
+          WHERE ${clauses.join(" AND ")}
+          GROUP BY c.id
+          ORDER BY ${orderCol} DESC
+          LIMIT ?`,
+    args,
+  });
+  return rs.rows;
 }
 
-export function distinctRegions(): string[] {
-  const rows = db
-    .prepare<[], { region: string }>(`SELECT DISTINCT region FROM creators WHERE region IS NOT NULL ORDER BY region`)
-    .all();
-  return rows.map((r) => r.region);
+export async function distinctRegions(): Promise<string[]> {
+  await ensureSchema();
+  const rs = await db.execute(
+    `SELECT DISTINCT region FROM creators WHERE region IS NOT NULL ORDER BY region`,
+  );
+  return (rs.rows as unknown as { region: string }[]).map((r) => r.region);
 }

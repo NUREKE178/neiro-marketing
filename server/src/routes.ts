@@ -31,8 +31,12 @@ router.get("/config/status", (_req, res) => {
   });
 });
 
-router.get("/regions", (_req, res) => {
-  res.json({ cities: KZ_CITIES, usedRegions: distinctRegions() });
+router.get("/regions", async (_req, res, next) => {
+  try {
+    res.json({ cities: KZ_CITIES, usedRegions: await distinctRegions() });
+  } catch (err) {
+    next(err);
+  }
 });
 
 router.post("/geolocate", (req, res) => {
@@ -57,8 +61,8 @@ router.post("/creators/analyze", async (req, res) => {
 
   try {
     const profile = await providers[platform].fetchProfile(username);
-    const creator = upsertCreatorFromProfile(profile);
-    const videos = getVideosForCreator(creator.id);
+    const creator = await upsertCreatorFromProfile(profile);
+    const videos = await getVideosForCreator(creator.id);
     res.json({ creator, videos });
   } catch (err) {
     if (err instanceof ProviderNotConfiguredError) {
@@ -72,48 +76,64 @@ router.post("/creators/analyze", async (req, res) => {
   }
 });
 
-router.get("/creators/:platform/:username", (req, res) => {
-  const { platform, username } = req.params;
-  if (!isPlatform(platform)) return res.status(400).json({ error: "invalid platform" });
+router.get("/creators/:platform/:username", async (req, res, next) => {
+  try {
+    const { platform, username } = req.params;
+    if (!isPlatform(platform)) return res.status(400).json({ error: "invalid platform" });
 
-  const creator = getCreator(platform, username.toLowerCase());
-  if (!creator) return res.status(404).json({ error: "Бұл аккаунт әлі талданбаған." });
+    const creator = await getCreator(platform, username.toLowerCase());
+    if (!creator) return res.status(404).json({ error: "Бұл аккаунт әлі талданбаған." });
 
-  res.json({ creator, videos: getVideosForCreator(creator.id) });
+    res.json({ creator, videos: await getVideosForCreator(creator.id) });
+  } catch (err) {
+    next(err);
+  }
 });
 
-router.patch("/creators/:id/region", (req, res) => {
-  const { region } = req.body as { region?: string };
-  if (!region) return res.status(400).json({ error: "region қажет" });
+router.patch("/creators/:id/region", async (req, res, next) => {
+  try {
+    const { region } = req.body as { region?: string };
+    if (!region) return res.status(400).json({ error: "region қажет" });
 
-  const city = findCityByIdOrName(region);
-  const updated = setCreatorRegion(req.params.id, city?.name ?? region);
-  if (!updated) return res.status(404).json({ error: "creator табылмады" });
-  res.json({ creator: updated });
+    const city = findCityByIdOrName(region);
+    const updated = await setCreatorRegion(req.params.id, city?.name ?? region);
+    if (!updated) return res.status(404).json({ error: "creator табылмады" });
+    res.json({ creator: updated });
+  } catch (err) {
+    next(err);
+  }
 });
 
-router.get("/search", (req, res) => {
-  const { keyword, region, platform } = req.query as Record<string, string | undefined>;
-  const results = searchCreators({ keyword, region, platform });
-  res.json({ results });
+router.get("/search", async (req, res, next) => {
+  try {
+    const { keyword, region, platform } = req.query as Record<string, string | undefined>;
+    const results = await searchCreators({ keyword, region, platform });
+    res.json({ results });
+  } catch (err) {
+    next(err);
+  }
 });
 
-router.get("/leaderboard", (req, res) => {
-  const { platform, region, metric, days, from, to } = req.query as Record<string, string | undefined>;
+router.get("/leaderboard", async (req, res, next) => {
+  try {
+    const { platform, region, metric, days, from, to } = req.query as Record<string, string | undefined>;
 
-  const toIso = to ? new Date(to).toISOString() : new Date().toISOString();
-  const fromIso = from
-    ? new Date(from).toISOString()
-    : new Date(Date.now() - Number(days ?? 7) * 24 * 60 * 60 * 1000).toISOString();
+    const toIso = to ? new Date(to).toISOString() : new Date().toISOString();
+    const fromIso = from
+      ? new Date(from).toISOString()
+      : new Date(Date.now() - Number(days ?? 7) * 24 * 60 * 60 * 1000).toISOString();
 
-  const results = leaderboard({
-    platform,
-    region,
-    metric: metric === "likes" ? "likes" : "views",
-    fromIso,
-    toIso,
-    limit: 5,
-  });
+    const results = await leaderboard({
+      platform,
+      region,
+      metric: metric === "likes" ? "likes" : "views",
+      fromIso,
+      toIso,
+      limit: 5,
+    });
 
-  res.json({ results, range: { from: fromIso, to: toIso } });
+    res.json({ results, range: { from: fromIso, to: toIso } });
+  } catch (err) {
+    next(err);
+  }
 });
