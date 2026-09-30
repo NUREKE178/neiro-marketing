@@ -16,6 +16,9 @@ app.get("/api/health", (_req, res) => res.json({ ok: true }));
 // didn't already handle itself.
 const jsonErrorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
   console.error(err);
-  res.status(500).json({ error: "Күтпеген сервер қатесі орын алды." });
+  res.status(500).json({
+    error: "Күтпеген сервер қатесі орын алды.",
+    detail: err instanceof Error ? err.message : String(err),
+  });
 };
 app.use(jsonErrorHandler);

@@ -72,7 +72,10 @@ router.post("/creators/analyze", async (req, res) => {
       return res.status(502).json({ error: err.message, code: "PROVIDER_REQUEST_FAILED" });
     }
     console.error(err);
-    res.status(500).json({ error: "Күтпеген қате орын алды." });
+    res.status(500).json({
+      error: "Күтпеген қате орын алды.",
+      detail: err instanceof Error ? err.message : String(err),
+    });
   }
 });
 

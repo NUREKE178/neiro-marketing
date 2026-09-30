@@ -23,6 +23,7 @@ export function AnalyzePage() {
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [errorCode, setErrorCode] = useState<string | undefined>();
+  const [errorDetail, setErrorDetail] = useState<string | undefined>();
   const [sort, setSort] = useState<SortMode>("views");
   const [cities, setCities] = useState<City[]>([]);
 
@@ -58,6 +59,7 @@ export function AnalyzePage() {
         }
         setErrorMsg(err.message);
         setErrorCode(err.code);
+        setErrorDetail(err.detail);
       })
       .finally(() => !cancelled && setLoading(false));
 
@@ -117,7 +119,9 @@ export function AnalyzePage() {
               ? "Серверде RAPIDAPI_KEY орнатылмаған. server/.env файлына кілтті қосыңыз — толығырақ server/README.md ішінде."
               : errorMsg
           }
-        />
+        >
+          {errorDetail && <p className={styles.errorDetail}>{errorDetail}</p>}
+        </EmptyState>
       </div>
     );
   }

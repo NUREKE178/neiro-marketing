@@ -1,4 +1,4 @@
-import { createClient } from "@libsql/client";
+import { createClient, Client } from "@libsql/client";
 import path from "node:path";
 import fs from "node:fs";
 import os from "node:os";
@@ -26,9 +26,35 @@ function resolveLocalUrl(): string {
   }
 }
 
-export const db = createClient({
-  url: process.env.TURSO_DATABASE_URL || resolveLocalUrl(),
-  authToken: process.env.TURSO_AUTH_TOKEN,
+// createClient() itself can throw synchronously (e.g. a malformed
+// TURSO_DATABASE_URL) — deferring construction behind this Proxy means that
+// only happens on first real use (inside ensureSchema(), called from a
+// request handler), never at module import time. store.ts / routes.ts keep
+// using `db.execute(...)` etc. unchanged; this is transparent to callers.
+let client: Client | null = null;
+let initError: unknown = null;
+
+function getClient(): Client {
+  if (client) return client;
+  if (initError) throw initError;
+  try {
+    client = createClient({
+      url: process.env.TURSO_DATABASE_URL || resolveLocalUrl(),
+      authToken: process.env.TURSO_AUTH_TOKEN,
+    });
+    return client;
+  } catch (err) {
+    initError = err;
+    throw err;
+  }
+}
+
+export const db: Client = new Proxy({} as Client, {
+  get(_target, prop) {
+    const c = getClient();
+    const value = c[prop as keyof Client];
+    return typeof value === "function" ? value.bind(c) : value;
+  },
 });
 
 const SCHEMA_STATEMENTS = [

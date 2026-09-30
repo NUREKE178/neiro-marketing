@@ -8,14 +8,16 @@ interface EmptyStateProps {
   description?: string;
   action?: ReactNode;
   tone?: "surface" | "danger" | "primary";
+  children?: ReactNode;
 }
 
-export function EmptyState({ icon, title, description, action, tone = "surface" }: EmptyStateProps) {
+export function EmptyState({ icon, title, description, action, tone = "surface", children }: EmptyStateProps) {
   return (
     <Card padding="lg" className={[styles.wrap, tone === "danger" ? styles.danger : ""].join(" ")}>
       {icon && <div className={styles.icon}>{icon}</div>}
       <h3 className={styles.title}>{title}</h3>
       {description && <p className={styles.desc}>{description}</p>}
+      {children}
       {action && <div className={styles.action}>{action}</div>}
     </Card>
   );

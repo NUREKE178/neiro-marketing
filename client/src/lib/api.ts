@@ -51,11 +51,13 @@ export interface LeaderboardEntry extends Creator {
 class ApiError extends Error {
   code?: string;
   status?: number;
+  detail?: string;
 
-  constructor(message: string, code?: string, status?: number) {
+  constructor(message: string, code?: string, status?: number, detail?: string) {
     super(message);
     this.code = code;
     this.status = status;
+    this.detail = detail;
   }
 }
 
@@ -72,7 +74,12 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   });
   const body = await res.json().catch(() => ({}));
   if (!res.ok) {
-    throw new ApiError(body.error ?? `Сұраныс сәтсіз аяқталды (${res.status})`, body.code, res.status);
+    throw new ApiError(
+      body.error ?? `Сұраныс сәтсіз аяқталды (${res.status})`,
+      body.code,
+      res.status,
+      body.detail,
+    );
   }
   return body as T;
 }

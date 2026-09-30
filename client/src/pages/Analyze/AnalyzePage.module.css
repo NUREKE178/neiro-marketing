@@ -5,6 +5,14 @@
   gap: var(--space-5);
 }
 
+.errorDetail {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--color-ink-soft);
+  margin-top: var(--space-2);
+  word-break: break-word;
+}
+
 .staleBanner {
   font-weight: 600;
   font-size: 0.85rem;
