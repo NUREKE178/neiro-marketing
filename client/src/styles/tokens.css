@@ -1,0 +1,88 @@
+:root {
+  --font-display: "Space Grotesk", "Inter", system-ui, sans-serif;
+  --font-body: "Inter", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  --color-bg: #f3efe4;
+  --color-surface: #ffffff;
+  --color-ink: #0d0d0d;
+  --color-ink-soft: #4a463f;
+  --color-border: #0d0d0d;
+
+  --color-primary: #ffde2e;
+  --color-primary-ink: #0d0d0d;
+  --color-secondary: #ff4fa0;
+  --color-secondary-ink: #0d0d0d;
+  --color-accent: #3d6bff;
+  --color-accent-ink: #ffffff;
+  --color-lime: #adff2f;
+  --color-lime-ink: #0d0d0d;
+  --color-danger: #ff5252;
+  --color-danger-ink: #ffffff;
+
+  --color-ig: #ff4fa0;
+  --color-tt: #14171a;
+
+  --border-w: 3px;
+  --border-w-lg: 4px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+
+  --shadow-sm: 3px 3px 0 var(--color-ink);
+  --shadow-md: 6px 6px 0 var(--color-ink);
+  --shadow-lg: 10px 10px 0 var(--color-ink);
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  --color-bg: #171510;
+  --color-surface: #201d18;
+  --color-ink: #f7f4ec;
+  --color-ink-soft: #c9c3b4;
+  --color-border: #f7f4ec;
+
+  --color-primary: #ffde2e;
+  --color-primary-ink: #0d0d0d;
+  --color-secondary: #ff4fa0;
+  --color-secondary-ink: #0d0d0d;
+  --color-accent: #6a8bff;
+  --color-accent-ink: #0d0d0d;
+  --color-lime: #adff2f;
+  --color-lime-ink: #0d0d0d;
+
+  --shadow-sm: 3px 3px 0 var(--color-border);
+  --shadow-md: 6px 6px 0 var(--color-border);
+  --shadow-lg: 10px 10px 0 var(--color-border);
+
+  color-scheme: dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --color-bg: #171510;
+    --color-surface: #201d18;
+    --color-ink: #f7f4ec;
+    --color-ink-soft: #c9c3b4;
+    --color-border: #f7f4ec;
+
+    --color-accent: #6a8bff;
+    --color-accent-ink: #0d0d0d;
+
+    --shadow-sm: 3px 3px 0 var(--color-border);
+    --shadow-md: 6px 6px 0 var(--color-border);
+    --shadow-lg: 10px 10px 0 var(--color-border);
+
+    color-scheme: dark;
+  }
+}
