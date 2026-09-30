@@ -1,128 +1,109 @@
-# САНА СҮЗГІСІ (MindFilter) - Android қосымшасы
+# NEIRO-MARKETING MONOREPO
+
+Бұл репозиторийде 2 толыққанды жоба бар:
+
+## 1. 🧠 САНА СҮЗГІСІ (MindFilter) — Android қосымшасы
 
 **Ғылыми жоба:** «Нейромаркетинг және цифрлық алгоритмдер: әлеуметтік желілер адам таңдауын қалай басқарады?»
 
-Толыққанды Android қосымшасы - Kotlin, Jetpack Compose, Material 3, MVVM, Room, DataStore.
+- **Платформа:** Android, Kotlin, Jetpack Compose, Material 3, MVVM, Room, DataStore
+- **Бөлімдер:** Басты бет, Нейромаркетинг (5 интерактивті), Алгоритм симуляторы, 6 дағды, Статистика, Зерттеу, Қорғау режимі
+- **Орналасқан жері:** `/app` — Android Studio жобасы
+- **Құжаттама:** `JOBA_TOLYQ_SIPATTAMASY.md` және `ҚҰРАСТЫРУ_НҰСҚАУЛЫҒЫ.md`
 
-## 📱 Жоба құрылымы
-
-```
-app/src/main/java/com/sanasuzgisi/mindfilter/
-├── MainActivity.kt
-├── ui/
-│   ├── theme/ Color.kt, Theme.kt, Type.kt
-│   ├── navigation/ Screen.kt, NavGraph.kt
-│   ├── components/ CommonComponents.kt
-│   └── screens/
-│       ├── home/ HomeScreen.kt
-│       ├── neuromarketing/ NeuromarketingScreen.kt
-│       ├── simulator/ AlgorithmSimulatorScreen.kt, SimulatorViewModel.kt
-│       ├── skills/ SkillsScreen.kt, SkillsViewModel.kt
-│       ├── stats/ StatsScreen.kt, StatsViewModel.kt
-│       ├── research/ ResearchScreen.kt, ResearchViewModel.kt
-│       └── presentation/ PresentationModeScreen.kt
-├── data/
-│   ├── model/ Models.kt (Topic, FeedItem, Skill, DailyStat, ExperimentResult)
-│   ├── local/ AppDatabase.kt, Daos.kt, PreferencesManager.kt
-│   └── repository/ Repository.kt
-└── util/
-```
-
-## 🛠 Технологиялар
-
-- Android minSdk 24, targetSdk 34
-- Kotlin 1.9.22
-- Jetpack Compose BOM 2024.02.00 + Material3 1.2.1
-- Navigation Compose 2.7.6
-- Room 2.6.1 + KSP
-- DataStore Preferences 1.0.0
-- MVVM архитектурасы
-- Офлайн жұмыс, жеке дерек жинамайды
-
-## 🎨 Дизайн
-
-- Негізгі түс: қою күлгін #3D2C8D
-- Қосымша: көгілдір #00D4FF, ақ, жұмсақ жасыл #4ADE80
-- Карточкалар, дөңгелек батырмалар, анимация
-- Қазақ тілінде, Material 3, төменгі навигация
-
-## 📚 Негізгі бөлімдер (Талапқа сай)
-
-**A. Басты бет** - жоба атауы, мақсаты, түсіндірме, навигация, «Зерттеуді бастау»
-
-**B. Нейромаркетинг** - түстер рөлі (интерактивті), шектеулі ұсыныс, әлеуметтік дәлел, импульсивті сатып алу, баға ұсыну. Ескерту: 100% басқарады деген тұжырым жоқ, медициналық диагноз жоқ.
-
-**C. Алгоритм симуляторы** - қызығушылық таңдау → жазбаларды қарау → лайк/өткізіп жіберу → ұпай есептеу (лайк +3, қарау +1, скип -1, дизлайк -2) → лента өзгеруі → бастапқы vs өзгерген салыстыру. Ескерту: оқу моделі екені жазылған.
-
-**D. Сана сүзгісі - 6 дағды** - әр дағдыға карточка, түсіндірме, пайдасы, орындау белгісі, прогресс. DataStore-да сақталады. Кінә артатын мәтін жоқ.
-
-**E. Статистика** - күн мен уақыт енгізу, күндік/апталық, орташа, бағандық диаграмма, салыстыру, өзгерту/жою. Телефон уақытын автоматты оқымайды.
-
-**F. Ғылыми зерттеу** - мақсаты, міндеттері, болжамы, теория, әдістер, барысы, нәтижелер, қорытынды. Кесте өңделеді, ҮЛГІ ДЕРЕК белгісі бар.
-
-**G. Қорғау режимі** - 7 қадам, әр қадамда қысқа мәтін, Келесі батырмасы, симуляторға өту, прогресс.
-
-## 🔒 Қауіпсіздік және этика
-
-- Жеке дерек жинамайды
-- Тіркелу жоқ
-- Деректер жергілікті (Room + DataStore)
-- Кез келген уақытта өшіруге болады
-- Симулятор оқу моделі екені көрсетілген
-- Медициналық диагноз жоқ
-- Сатып алуға итермелемейді
-- Бейтарап тіл
-
-## 🚀 Құрастыру және іске қосу
-
-### Android Studio-да ашу
-
-1. Android Studio Hedgehog немесе жаңасын аш
-2. `File → Open → neiro-marketing` бумасын таңда
-3. Gradle Sync күт
-4. Эмулятор немесе нақты құрылғы қос
-5. `Run → Run 'app'` бас
-
-### APK шығару
-
-1. Android Studio-да `Build → Generate Signed Bundle / APK`
-2. APK таңда
-3. Keystore жаса (немесе debug)
-4. `release` build таңда
-5. `app/build/outputs/apk/release/app-release.apk` - дайын APK
-
-Команда арқылы:
 ```bash
+# Android Studio-да ашу
+File → Open → neiro-marketing (root)
+# APK
 ./gradlew assembleDebug
-# APK: app/build/outputs/apk/debug/app-debug.apk
-
-./gradlew assembleRelease
-# APK: app/build/outputs/apk/release/app-release.apk
 ```
-
-### Тест
-
-- Барлық экрандар жұмыс істейді
-- Батырмалар дұрыс
-- Деректер сақталады (жауып ашқанда жоғалмайды)
-- Интернетсіз жұмыс
-- Қате енгізуге түсінікті ескерту
-
-## 📖 Қолдану
-
-1. Басты бетте жобамен таныс
-2. Нейромаркетинг бөлімінде түстерді бас, таймерді қос
-3. Симуляторда қызығушылық таңдап, лентамен ойна
-4. 6 дағдыны белгіле, прогресс көр
-5. Күнде экран уақытыңды енгіз
-6. Зерттеу бөлімінде кесте толтыр
-7. Қорғау режимінде комиссияға көрсет
-
-## 👨‍🏫 Комиссияға
-
-Қорғау режимі арнайы жасалған - 7 қадам, әрқайсысында 1 минут сөйлеуге жетеді. Симуляторды тірі көрсетуге болады.
-
-Сұрақтар болса: жоба толық MVVM, модульдерге бөлінген, оқуға жеңіл код.
 
 ---
-© 2026 Сана Сүзгісі - Оқу мақсатындағы ғылыми жоба
+
+## 2. 📊 SOCIAL PULSE — Instagram & TikTok Analytics SaaS
+
+**Tagline:** “Find Trends. Analyze Content. Make Smarter Moves.”
+
+Neo-Brutalism UI/UX • Premium SaaS • Responsive Web App
+
+**Стек:** Next.js 14, React 18, TypeScript, Tailwind CSS, shadcn/ui, Framer Motion, Recharts, TanStack Query, Zustand, Prisma, PostgreSQL, NextAuth, AI
+
+**Дизайн:** Neo-Brutalism — #D9FF3F Primary, #111111 Black, қалың border 3-4px, қатты көлеңке 6px, bold typography (Syne + Space Grotesk)
+
+**Орналасқан жері:** `/social-pulse`
+
+### Негізгі мүмкіндіктер
+
+- **Smart Search:** @username, URL, niche (ойыншық, coffee shop), платформа таңдау (All/Instagram/TikTok), өңір (Алматы, Астана...), геолокация опционал
+- **Search by Niche:** Top 5 аккаунт карточкасы (avatar, bio, followers, avg views/likes, ER, белсенділік, өңір расталған/расталмаған), сұрыптау
+- **Account Analytics:** Overview, KPI (Followers, Total views/likes/comments, Videos, Avg views) + салыстыру, Video Performance Table (thumbnail, title, date, views/likes/comments/ER, sort/filter), Video Detail + AI
+- **Date Filter:** Today, Yesterday, Last 7/14/30/90 days, Custom
+- **Trend Discovery:** хэштегтер, жиі сөздер, posting frequency, views chart, контент форматтары
+- **AI Analyst:** Нақты дерек / Есептелген / AI интерпретациясы бөлек, жалған дәлдік жоқ
+- **Engagement Calculator:** Video (Likes+Comments+Shares)/Views*100, Account (Likes+Comments)/Followers*100
+- **Competitor Comparison:** көп аккаунт таңдау, кесте + график, дерек жоқ → “Дерек қолжетімсіз”
+- **Export:** PDF/CSV/Excel, disclaimer: “Бұл есеп тек қолжетімді жария деректер...”
+- **API:** /api/analyze, /api/accounts, /api/trends, /api/export — ресми API ғана, scraping жоқ, rate limit, cache, OAuth, дереккөз әр карточкада
+- **SaaS Dashboard:** Sidebar (Overview, Search, Analytics, Trends, Competitors, Saved, Reports, Settings), Header (Search, Platform, Date, Notifications), Overview (KPI, соңғы талдау, трендтер)
+
+### Орнату
+
+```bash
+cd social-pulse
+npm install
+cp .env.example .env
+npm run dev
+# http://localhost:3000
+```
+
+**Build:**
+```bash
+npm run build
+npm start
+```
+
+**Docker:**
+```bash
+docker build -t social-pulse .
+docker run -p 3000:3000 social-pulse
+```
+
+**Vercel Deploy:** Vercel-ге import → env қою → Deploy
+
+### Демо
+
+Барлық жерде **DEMO DATA — нақты аккаунт статистикасы емес** белгісі бар. Mock: almaty_toys, toy_world_kz, balalar_alemi, coffee_almaty, beauty_kz
+
+---
+
+## 📁 Құрылым
+
+```
+neiro-marketing/
+├── app/                          # Android - Sana Suzgisi
+│   ├── src/main/java/...         # Kotlin + Compose
+│   └── build.gradle.kts
+├── social-pulse/                 # Web - Social Pulse SaaS
+│   ├── src/app/                  # Next.js 14 App Router
+│   │   ├── page.tsx              # Smart Search
+│   │   ├── (dashboard)/          # Overview, Search, Analytics, Trends, Competitors, Saved, Reports, Settings
+│   │   └── api/                  # analyze, accounts, trends, export
+│   ├── src/components/ui/        # button, card, input, badge, skeleton
+│   ├── src/components/layout/    # Sidebar, Header
+│   ├── src/lib/                  # utils, mockData, db, ai
+│   ├── prisma/schema.prisma
+│   └── package.json
+├── README.md
+└── ...
+```
+
+---
+
+## 🔒 Этика және Қауіпсіздік
+
+- **Sana Suzgisi:** жеке дерек жоқ, офлайн, медициналық диагноз жоқ, бейтарап тіл
+- **Social Pulse:** тек ресми API, жеке/құпия аккаунтқа рұқсатсыз кірмеу, scraping/CAPTCHA айналып өтуге тыйым, API кілттері backend-та ғана, rate limit, дереккөз белгісі, OAuth
+
+---
+
+© 2026 NEIRO-MARKETING • Sana Suzgisi + Social Pulse • DEMO MODE

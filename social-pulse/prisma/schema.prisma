@@ -1,0 +1,128 @@
+// Prisma schema for SOCIAL PULSE
+// For demo, app works without DB (mock data). For production, use PostgreSQL
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  image         String?
+  role          Role      @default(USER)
+  accounts      SavedAccount[]
+  searches      Search[]
+  reports       Report[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model SavedAccount {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  username      String
+  platform      Platform
+  displayName   String?
+  region        String?  @default("all")
+  isDemo        Boolean  @default(true)
+  createdAt     DateTime @default(now())
+
+  @@unique([userId, username, platform])
+}
+
+model Search {
+  id            String     @id @default(cuid())
+  userId        String?
+  user          User?      @relation(fields: [userId], references: [id])
+  query         String
+  platform      Platform   @default(ALL)
+  searchType    SearchType @default(NICHE)
+  region        String     @default("all")
+  resultsCount  Int        @default(0)
+  createdAt     DateTime   @default(now())
+}
+
+model AccountAnalytics {
+  id            String   @id @default(cuid())
+  username      String
+  platform      Platform
+  followers     Int?
+  totalViews    Int?
+  totalLikes    Int?
+  totalComments Int?
+  totalVideos   Int?
+  avgViews      Int?
+  engagementRate Float?
+  lastPostDate  DateTime?
+  source        String   @default("demo")
+  isDemo        Boolean  @default(true)
+  lastUpdated   DateTime @default(now())
+  createdAt     DateTime @default(now())
+
+  @@unique([username, platform])
+}
+
+model Video {
+  id            String   @id @default(cuid())
+  accountId     String
+  platform      Platform
+  title         String?
+  caption       String?
+  url           String?
+  thumbnail     String?
+  views         Int?
+  likes         Int?
+  comments      Int?
+  shares        Int?
+  engagementRate Float?
+  publishedAt   DateTime?
+  hashtags      String[] @default([])
+  contentType   String?
+  isDemo        Boolean  @default(true)
+  createdAt     DateTime @default(now())
+}
+
+model Report {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title         String
+  accountUsername String?
+  platform      Platform? @default(ALL)
+  dateFrom      DateTime?
+  dateTo        DateTime?
+  format        ReportFormat @default(PDF)
+  data          Json?
+  isDemo        Boolean  @default(true)
+  createdAt     DateTime @default(now())
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum Platform {
+  ALL
+  INSTAGRAM
+  TIKTOK
+}
+
+enum SearchType {
+  ACCOUNT
+  VIDEO
+  NICHE
+}
+
+enum ReportFormat {
+  PDF
+  CSV
+  EXCEL
+}

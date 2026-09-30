@@ -1,0 +1,80 @@
+"use client"
+import Link from "next/link"
+import { usePathname } from "next/navigation"
+import { cn } from "@/lib/utils"
+import { 
+  LayoutDashboard, 
+  Search, 
+  BarChart3, 
+  TrendingUp, 
+  Users, 
+  Bookmark, 
+  FileText, 
+  Settings,
+  Zap
+} from "lucide-react"
+
+const navItems = [
+  { href: "/", label: "Overview", icon: LayoutDashboard, exact: true },
+  { href: "/search", label: "Search", icon: Search },
+  { href: "/analytics", label: "Account Analytics", icon: BarChart3 },
+  { href: "/trends", label: "Trend Discovery", icon: TrendingUp },
+  { href: "/competitors", label: "Competitors", icon: Users },
+  { href: "/saved", label: "Saved", icon: Bookmark },
+  { href: "/reports", label: "Reports", icon: FileText },
+  { href: "/settings", label: "Settings", icon: Settings },
+]
+
+export function Sidebar() {
+  const pathname = usePathname()
+
+  return (
+    <aside className="w-[280px] min-h-screen bg-white border-r-4 border-black flex flex-col sticky top-0">
+      {/* Logo */}
+      <div className="p-6 border-b-4 border-black bg-primary">
+        <Link href="/" className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-black border-3 border-black flex items-center justify-center">
+            <Zap className="w-6 h-6 text-primary" />
+          </div>
+          <div>
+            <h1 className="text-xl font-black tracking-tighter leading-none">SOCIAL PULSE</h1>
+            <p className="text-[10px] font-bold uppercase tracking-widest opacity-70">Analytics SaaS</p>
+          </div>
+        </Link>
+      </div>
+
+      {/* Nav */}
+      <nav className="flex-1 p-4 space-y-2">
+        {navItems.map((item) => {
+          const isActive = item.exact ? pathname === item.href : pathname.startsWith(item.href)
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={cn(
+                "flex items-center gap-3 px-4 py-3 border-3 border-transparent font-bold text-sm uppercase tracking-wide transition-all",
+                isActive 
+                  ? "bg-black text-white border-black shadow-[4px_4px_0px_0px_#111] translate-x-[-2px] translate-y-[-2px]" 
+                  : "hover:bg-primary hover:border-black hover:shadow-[4px_4px_0px_0px_#111] hover:translate-x-[-1px] hover:translate-y-[-1px]"
+              )}
+            >
+              <item.icon className="w-5 h-5" />
+              {item.label}
+            </Link>
+          )
+        })}
+      </nav>
+
+      {/* Bottom card */}
+      <div className="p-4">
+        <div className="bg-purple border-3 border-black p-4 shadow-[4px_4px_0px_0px_#111]">
+          <p className="font-black text-sm uppercase">DEMO MODE</p>
+          <p className="text-xs font-bold mt-1">DEMO DATA — нақты аккаунт статистикасы емес</p>
+          <div className="mt-3 bg-black text-white text-[10px] font-black px-2 py-1 inline-block uppercase">
+            Pro-ға жаңарту →
+          </div>
+        </div>
+      </div>
+    </aside>
+  )
+}

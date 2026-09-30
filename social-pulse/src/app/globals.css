@@ -1,0 +1,105 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Syne:wght@600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --primary: #D9FF3F;
+  --black: #111111;
+  --white: #FFFFFF;
+  --purple: #A78BFA;
+  --pink: #FF75B5;
+  --blue: #76D7FF;
+  --bg: #F5F4EF;
+}
+
+* {
+  border-color: #111111;
+}
+
+body {
+  background: #F5F4EF;
+  color: #111111;
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+}
+
+h1, h2, h3, .display {
+  font-family: 'Syne', sans-serif;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+/* Neo-Brutalism utilities */
+.brut-border {
+  border: 3px solid #111111;
+}
+.brut-border-4 {
+  border: 4px solid #111111;
+}
+.brut-shadow {
+  box-shadow: 6px 6px 0px 0px #111111;
+}
+.brut-shadow-sm {
+  box-shadow: 4px 4px 0px 0px #111111;
+}
+.brut-shadow-lg {
+  box-shadow: 8px 8px 0px 0px #111111;
+}
+.brut-shadow-hover:hover {
+  box-shadow: 8px 8px 0px 0px #111111;
+  transform: translate(-2px, -2px);
+}
+.brut-card {
+  border: 3px solid #111111;
+  box-shadow: 6px 6px 0px 0px #111111;
+  background: white;
+  transition: all 0.15s ease;
+}
+.brut-card:hover {
+  box-shadow: 8px 8px 0px 0px #111111;
+  transform: translate(-2px, -2px);
+}
+.brut-btn {
+  border: 3px solid #111111;
+  box-shadow: 4px 4px 0px 0px #111111;
+  font-weight: 700;
+  text-transform: uppercase;
+  transition: all 0.15s ease;
+}
+.brut-btn:hover {
+  box-shadow: 6px 6px 0px 0px #111111;
+  transform: translate(-2px, -2px);
+}
+.brut-btn:active {
+  box-shadow: 2px 2px 0px 0px #111111;
+  transform: translate(2px, 2px);
+}
+.brut-input {
+  border: 3px solid #111111;
+  box-shadow: 4px 4px 0px 0px #111111;
+  font-weight: 600;
+}
+.brut-input:focus {
+  outline: none;
+  box-shadow: 6px 6px 0px 0px #111111;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 12px;
+}
+::-webkit-scrollbar-track {
+  background: #F5F4EF;
+  border-left: 2px solid #111111;
+}
+::-webkit-scrollbar-thumb {
+  background: #111111;
+  border: 2px solid #F5F4EF;
+}
+
+/* Animations */
+@keyframes brutal-bounce {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(-2px, -2px); }
+}
