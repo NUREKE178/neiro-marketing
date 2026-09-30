@@ -1,0 +1,38 @@
+appId: com.socialpulse.desktop
+productName: Social Pulse
+copyright: Copyright © 2026 Social Pulse
+
+files:
+  - electron/**/*
+  - .next/**/*
+  - public/**/*
+  - package.json
+  - next.config.js
+
+win:
+  target:
+    - target: nsis
+      arch: [x64, ia32]
+    - target: portable
+      arch: [x64]
+  icon: public/icons/icon-512.png
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Social Pulse
+  installerIcon: public/icons/icon-512.png
+  uninstallerIcon: public/icons/icon-512.png
+  installerHeaderIcon: public/icons/icon-512.png
+
+portable:
+  artifactName: Social-Pulse-Portable-${version}.exe
+
+directories:
+  buildResources: public
+  output: dist
+
+extraMetadata:
+  main: electron/main.js

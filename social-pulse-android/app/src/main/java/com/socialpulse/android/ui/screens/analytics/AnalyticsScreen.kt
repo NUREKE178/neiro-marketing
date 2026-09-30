@@ -13,7 +13,9 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.socialpulse.android.data.model.MockData
 import com.socialpulse.android.data.model.formatNumber
+import com.socialpulse.android.ui.components.BrutalBarChart
 import com.socialpulse.android.ui.components.BrutalCard
+import com.socialpulse.android.ui.components.BrutalLineChart
 import com.socialpulse.android.ui.components.DemoBadge
 import com.socialpulse.android.ui.components.KpiCard
 import com.socialpulse.android.ui.theme.*
@@ -49,14 +51,27 @@ fun AnalyticsScreen(navController: NavController) {
                             DemoBadge()
                         }
                         Spacer(modifier = Modifier.height(8.dp))
-                        Text("Талдау кезеңі: $dateRange • Соңғы жаңарту: ${account.lastPostDate} • Дереккөз: ${account.source}", fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                        // Date filter
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            listOf("Today", "Last 7 days", "Last 30 days", "Custom").forEach { range ->
+                                val isSel = dateRange == range
+                                FilterChip(
+                                    selected = isSel,
+                                    onClick = { dateRange = range },
+                                    label = { Text(range, fontSize = 10.sp, fontWeight = FontWeight.Black) },
+                                    colors = FilterChipDefaults.filterChipColors(selectedContainerColor = PrimaryYellow)
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text("Талдау кезеңі: $dateRange • Соңғы жаңарту: ${account.lastPostDate} • Дереккөз: ${account.source} • DEMO DATA", fontSize = 10.sp, fontWeight = FontWeight.Bold)
                     }
                 }
             }
 
             item {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    KpiCard("Followers", formatNumber(account.followers), "+12.5%", PrimaryYellow, Modifier.weight(1f))
+                    KpiCard("Followers", formatNumber(account.followers), "+12.5% алдыңғы кезең", PrimaryYellow, Modifier.weight(1f))
                     KpiCard("Total Views", formatNumber(account.totalViews), "+8.3%", Blue, Modifier.weight(1f))
                     KpiCard("Total Likes", formatNumber(account.totalLikes), "-2.1%", Purple, Modifier.weight(1f))
                 }
@@ -69,7 +84,37 @@ fun AnalyticsScreen(navController: NavController) {
             }
 
             item {
+                Text("📊 Charts • DEMO DATA", fontWeight = FontWeight.Black, fontSize = 16.sp)
+                BrutalCard(background = Blue) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Text("Views by Video • Нақты дерек", fontWeight = FontWeight.Black, fontSize = 12.sp)
+                        Spacer(modifier = Modifier.height(8.dp))
+                        BrutalBarChart(data = videos.map { it.title.take(6) to it.views }, barColor = PrimaryYellow)
+                    }
+                }
+                Spacer(modifier = Modifier.height(12.dp))
+                BrutalCard(background = Purple) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Text("Posting Frequency • Last 7 days", fontWeight = FontWeight.Black, fontSize = 12.sp)
+                        Spacer(modifier = Modifier.height(8.dp))
+                        BrutalLineChart(data = MockData.postingFrequency)
+                    }
+                }
+            }
+
+            item {
                 Text("Video Performance Table • DEMO DATA", fontWeight = FontWeight.Black)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(onClick = {}, modifier = Modifier.border(3.dp, Black), colors = ButtonDefaults.buttonColors(containerColor = Black)) {
+                        Text("Views ↕", fontSize = 10.sp, fontWeight = FontWeight.Black, color = White)
+                    }
+                    Button(onClick = {}, modifier = Modifier.border(3.dp, Black)) {
+                        Text("Likes ↕", fontSize = 10.sp, fontWeight = FontWeight.Black)
+                    }
+                    Button(onClick = {}, modifier = Modifier.border(3.dp, Black)) {
+                        Text("Date ↕", fontSize = 10.sp, fontWeight = FontWeight.Black)
+                    }
+                }
             }
 
             items(videos) { video ->
@@ -85,8 +130,8 @@ fun AnalyticsScreen(navController: NavController) {
                             Text("ER ${video.engagementRate}%", fontWeight = FontWeight.Black, fontSize = 11.sp, modifier = Modifier.border(2.dp, Black).padding(4.dp))
                         }
                         Spacer(modifier = Modifier.height(4.dp))
-                        Text("Формула: (Likes+Comments+Shares)/Views*100 • ${video.hashtags.joinToString(" #", prefix = "#")}", fontSize = 9.sp, fontWeight = FontWeight.Bold)
-                        Text("Дереккөз: ${account.source} • ${video.publishedAt}", fontSize = 9.sp)
+                        Text("Формула: (Likes+Comments+Shares)/Views*100 = ${video.engagementRate}% • ${video.hashtags.joinToString(" #", prefix = "#")}", fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                        Text("Дереккөз: ${account.source} • ${video.publishedAt} • ${video.isDemo}", fontSize = 9.sp)
                     }
                 }
             }
@@ -96,22 +141,21 @@ fun AnalyticsScreen(navController: NavController) {
                 BrutalCard(background = PrimaryYellow) {
                     Column(modifier = Modifier.padding(12.dp)) {
                         Text("📊 Нақты дерек (API)", fontWeight = FontWeight.Black, fontSize = 12.sp)
-                        Text("• Аккаунт 127 видео жариялаған, соңғы 7 күнде 4 видео\n• Ең көп қаралым: 12,300 (LEGO)\n• Орташа ER: 4.2%", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        Text("• Аккаунт 127 видео жариялаған, соңғы 7 күнде 4 видео\n• Ең көп қаралым: 12,300 (LEGO)\n• Орташа ER: 4.2%\n• Дереккөз: Instagram API (demo) • 2024-09-30", fontSize = 11.sp, fontWeight = FontWeight.Bold)
                     }
                 }
                 Spacer(modifier = Modifier.height(8.dp))
                 BrutalCard(background = Blue) {
                     Column(modifier = Modifier.padding(12.dp)) {
                         Text("🧮 Есептелген көрсеткіш", fontWeight = FontWeight.Black, fontSize = 12.sp)
-                        Text("• ER = (890+45+12)/12300*100 = 7.7%\n• Орташа қаралым: 892K/127=7,023\n• Жиілік: аптасына 4.2 видео", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        Text("• ER = (890+45+12)/12300*100 = 7.7%\n• Орташа қаралым: 892K/127=7,023\n• Жиілік: аптасына 4.2 видео\n• Формула: (Likes+Comments)/Followers*100", fontSize = 11.sp, fontWeight = FontWeight.Bold)
                     }
                 }
                 Spacer(modifier = Modifier.height(8.dp))
                 BrutalCard(background = Purple) {
                     Column(modifier = Modifier.padding(12.dp)) {
                         Text("🤖 AI Интерпретациясы", fontWeight = FontWeight.Black, fontSize = 12.sp)
-                        Text("• Негізінен showcase формат\n• Распаковка жоғары ER (7.8%)\n• Ұсыныс: 18:00-20:00 жариялау, #ойыншық хэштег", fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                        Text("AI болжамы кепілдік емес, тек идея", fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                        Text("• Негізінен showcase формат\n• Распаковка жоғары ER (7.8%)\n• Ұсыныс: 18:00-20:00 жариялау, #ойыншық хэштег\n• AI болжамы кепілдік емес, тек идея", fontSize = 11.sp, fontWeight = FontWeight.Bold)
                     }
                 }
             }

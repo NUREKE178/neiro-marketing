@@ -11,7 +11,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.socialpulse.android.data.model.MockData
+import com.socialpulse.android.ui.components.BrutalBarChart
 import com.socialpulse.android.ui.components.BrutalCard
+import com.socialpulse.android.ui.components.BrutalLineChart
 import com.socialpulse.android.ui.components.DemoBadge
 import com.socialpulse.android.ui.theme.*
 
@@ -59,7 +61,7 @@ fun TrendsScreen(navController: NavController) {
             item {
                 BrutalCard(background = PrimaryYellow) {
                     Column(modifier = Modifier.padding(12.dp)) {
-                        Text("🔥 Жиі хэштегтер", fontWeight = FontWeight.Black)
+                        Text("🔥 Жиі хэштегтер • Нақты дерек", fontWeight = FontWeight.Black)
                         Spacer(modifier = Modifier.height(8.dp))
                         MockData.hashtags.forEach { (tag, count) ->
                             Row(modifier = Modifier.fillMaxWidth().border(2.dp, Black).padding(8.dp), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -75,14 +77,19 @@ fun TrendsScreen(navController: NavController) {
             item {
                 BrutalCard(background = Blue) {
                     Column(modifier = Modifier.padding(12.dp)) {
-                        Text("📅 Жарияланым белсенділігі", fontWeight = FontWeight.Black)
+                        Text("📅 Жарияланым белсенділігі • Posts by date", fontWeight = FontWeight.Black)
                         Spacer(modifier = Modifier.height(8.dp))
-                        MockData.postingFrequency.forEach { (date, count) ->
-                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                Text(date, fontWeight = FontWeight.Bold)
-                                Text("$count пост", fontWeight = FontWeight.Black)
-                            }
-                        }
+                        BrutalLineChart(data = MockData.postingFrequency)
+                    }
+                }
+            }
+
+            item {
+                BrutalCard(background = White) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Text("📊 Views by Video • Нақты дерек", fontWeight = FontWeight.Black)
+                        Spacer(modifier = Modifier.height(8.dp))
+                        BrutalBarChart(data = MockData.accounts.take(5).map { it.username.take(6) to it.totalViews }, barColor = PrimaryYellow)
                     }
                 }
             }
@@ -90,7 +97,7 @@ fun TrendsScreen(navController: NavController) {
             item {
                 BrutalCard(background = Purple) {
                     Column(modifier = Modifier.padding(12.dp)) {
-                        Text("Контент форматтары", fontWeight = FontWeight.Black)
+                        Text("Контент форматтары • AI классификация", fontWeight = FontWeight.Black)
                         Spacer(modifier = Modifier.height(8.dp))
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             Column(modifier = Modifier.border(2.dp, Black).padding(8.dp).weight(1f)) {
@@ -112,7 +119,7 @@ fun TrendsScreen(navController: NavController) {
 
             item {
                 BrutalCard(background = Black) {
-                    Text("Графиктер тек қолда бар және нақты алынған деректерге негізделген. Болжамды көрсеткіштер нақты статистикадан ерекшеленеді.", color = White, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(12.dp))
+                    Text("Графиктер тек қолда бар және нақты алынған деректерге негізделген. Болжамды көрсеткіштер нақты статистикадан ерекшеленеді. DEMO DATA — нақты статистика емес.", color = White, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(12.dp))
                 }
                 Spacer(modifier = Modifier.height(80.dp))
             }
