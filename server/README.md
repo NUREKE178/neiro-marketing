@@ -1,6 +1,6 @@
 # NEIRO — server
 
-Express + TypeScript + SQLite (better-sqlite3) backend. No mock data: every number shown in the app comes from a live RapidAPI call, normalized and cached in `server/data/neiro-marketing.sqlite`.
+Express + TypeScript + SQLite backend (via `@libsql/client` — see [Database](#database) below). No mock data: every number shown in the app comes from a live RapidAPI call, normalized and cached in the DB.
 
 ## Dev
 
@@ -32,6 +32,20 @@ Before relying on this in production:
 3. Compare field names against `mapProfile`/`mapVideos` in the relevant `rapidapiXxx.ts` file and adjust (they're deliberately isolated from the rest of the app so this is a small, local edit).
 
 If a call fails, the API responds with a clear `PROVIDER_REQUEST_FAILED` error (surfaced in the UI) rather than silently showing wrong numbers.
+
+## Database
+
+Local dev needs no setup — `server/src/db.ts` defaults to an embedded SQLite file at `server/data/neiro-marketing.sqlite`. In production on Vercel, serverless functions have no persistent disk, so point it at a free [Turso](https://turso.tech) database instead (same SQL dialect, `@libsql/client` talks to both transparently):
+
+```bash
+# turso CLI: https://docs.turso.tech/cli/installation
+turso auth login
+turso db create neiro-marketing
+turso db show neiro-marketing --url            # -> TURSO_DATABASE_URL
+turso db tokens create neiro-marketing          # -> TURSO_AUTH_TOKEN
+```
+
+Set both as environment variables (in `server/.env` locally, or in the Vercel project settings for prod). Schema migrations run automatically on first request (`ensureSchema()` in `db.ts`).
 
 ## Data model
 
