@@ -1,0 +1,52 @@
+.wrap {
+  display: inline-flex;
+  border: var(--border-w) solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.segment {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 18px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  background: transparent;
+  border: none;
+  border-right: var(--border-w) solid var(--color-border);
+  cursor: pointer;
+  color: var(--color-ink);
+}
+
+.segment:last-child {
+  border-right: none;
+}
+
+.segment:hover {
+  background: color-mix(in srgb, var(--color-ink) 6%, transparent);
+}
+
+.active-primary {
+  background: var(--color-primary);
+  color: var(--color-primary-ink);
+}
+.active-secondary {
+  background: var(--color-secondary);
+  color: var(--color-secondary-ink);
+}
+.active-accent {
+  background: var(--color-accent);
+  color: var(--color-accent-ink);
+}
+
+.active-primary:hover,
+.active-secondary:hover,
+.active-accent:hover {
+  background: inherit;
+}

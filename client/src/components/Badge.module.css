@@ -1,0 +1,43 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border: 2px solid var(--color-border);
+  border-radius: 999px;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+
+.outline {
+  background: var(--color-surface);
+  color: var(--color-ink);
+}
+.primary {
+  background: var(--color-primary);
+  color: var(--color-primary-ink);
+}
+.secondary {
+  background: var(--color-secondary);
+  color: var(--color-secondary-ink);
+}
+.accent {
+  background: var(--color-accent);
+  color: var(--color-accent-ink);
+}
+.lime {
+  background: var(--color-lime);
+  color: var(--color-lime-ink);
+}
+.ink {
+  background: var(--color-ink);
+  color: var(--color-bg);
+}
+.danger {
+  background: var(--color-danger);
+  color: var(--color-danger-ink);
+}

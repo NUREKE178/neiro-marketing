@@ -1,0 +1,81 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.legend {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.legendItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--color-ink);
+}
+
+.legendDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+  border: 1.5px solid var(--color-border);
+}
+
+.tableToggle {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  background: transparent;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 2px 8px;
+  cursor: pointer;
+  color: var(--color-ink-soft);
+}
+
+.svg {
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.gridline {
+  stroke: var(--color-ink-soft);
+  stroke-opacity: 0.18;
+  stroke-width: 1;
+}
+
+.axisLabel {
+  fill: var(--color-ink-soft);
+  font-size: 9px;
+  font-family: var(--font-mono);
+}
+
+.empty {
+  color: var(--color-ink-soft);
+  font-size: 0.85rem;
+  padding: var(--space-4) 0;
+  text-align: center;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+}
+
+.table th,
+.table td {
+  border: 1px solid var(--color-border);
+  padding: 4px 8px;
+  text-align: center;
+  color: var(--color-ink);
+}
