@@ -37,10 +37,17 @@ async function call(path: string, params: Record<string, string>) {
 // below (first match wins). This sandbox cannot reach rapidapi.com to
 // verify live, so these candidates are best-effort, not confirmed.
 
-const PROFILE_CANDIDATES = ["data", "user", ""]; // "" = root
+// "user_data" confirmed live against a real subscribed vendor (2026-10-02):
+// { user_data: { pk, username, full_name, profile_pic_url, hd_profile_pic_url_info: { url }, follower_count, is_private, is_verified }, user_posts: [...] }
+const PROFILE_CANDIDATES = ["user_data", "data", "user", ""]; // "" = root
 const USERNAME_FIELDS = ["username", "username_or_id", "user.username"];
 const FULLNAME_FIELDS = ["full_name", "fullName", "user.full_name"];
-const AVATAR_FIELDS = ["profile_pic_url", "profile_pic_url_hd", "user.profile_pic_url"];
+const AVATAR_FIELDS = [
+  "hd_profile_pic_url_info.url",
+  "profile_pic_url",
+  "profile_pic_url_hd",
+  "user.profile_pic_url",
+];
 const BIO_FIELDS = ["biography", "bio", "user.biography"];
 const FOLLOWER_FIELDS = ["follower_count", "followers", "edge_followed_by.count", "user.follower_count"];
 const NOT_FOUND_SIGNALS = ["error", "message", "detail"];
@@ -92,21 +99,37 @@ function mapProfile(
 }
 
 function mapVideos(raw: Record<string, unknown>): NormalizedVideo[] {
-  const items = (raw.data ?? raw.items ?? raw.reels ?? raw.posts ?? []) as unknown;
+  // "user_posts" confirmed live: [{ node: { media_dict: { code, image_versions2, id } } }, ...] —
+  // but that specific ("Basic User + Posts") endpoint carries NO engagement
+  // numbers at all (no play/like/comment_count, no caption, no timestamp).
+  // If your vendor's metrics-bearing endpoint (e.g. "User Posts"/"User
+  // Reels") uses a different shape, add its candidate path here too.
+  const items = (raw.user_posts ?? raw.data ?? raw.items ?? raw.reels ?? raw.posts ?? []) as unknown;
   if (!Array.isArray(items)) return [];
 
   return items.map((item) => {
-    const media = (readPath(item, "media") ?? item) as Record<string, unknown>;
+    const media = (readPath(item, "node.media_dict") ?? readPath(item, "media") ?? item) as Record<
+      string,
+      unknown
+    >;
     const caption = media.caption as Record<string, unknown> | string | undefined;
     const captionText =
       typeof caption === "string" ? caption : String((caption as Record<string, unknown>)?.text ?? "");
     const takenAt = media.taken_at ?? media.taken_at_timestamp;
     const code = media.code as string | undefined;
+    const imageCandidates = readPath(media, "image_versions2.candidates") as
+      | Record<string, unknown>[]
+      | undefined;
+    const thumbnailUrl =
+      (media.thumbnail_url as string | undefined) ??
+      (media.display_url as string | undefined) ??
+      (imageCandidates?.[0]?.url as string | undefined) ??
+      null;
 
     return {
       externalId: String(media.id ?? media.pk ?? code ?? crypto.randomUUID()),
       url: code ? `https://www.instagram.com/reel/${code}/` : null,
-      thumbnailUrl: (media.thumbnail_url ?? media.display_url ?? null) as string | null,
+      thumbnailUrl,
       caption: captionText,
       views: numOrNull(media.play_count ?? media.view_count ?? media.ig_play_count),
       likes: numOrNull(media.like_count),
@@ -120,10 +143,20 @@ export const rapidapiInstagramProvider: SocialProvider = {
   platform: "instagram",
   source: "rapidapi_instagram",
   async fetchProfile(username) {
-    const [profileRaw, postsRaw] = await Promise.all([
-      call(PROFILE_PATH, { [USERNAME_PARAM]: username }),
-      call(POSTS_PATH, { [USERNAME_PARAM]: username, count: "24" }),
-    ]);
+    // Some vendors (confirmed: "GET Basic User + Posts") return profile +
+    // posts from a single call. Point both path env vars at the same value
+    // to enable this and avoid a redundant second request.
+    const combined = PROFILE_PATH === POSTS_PATH;
+
+    const [profileRaw, postsRaw] = combined
+      ? await (async () => {
+          const r = await call(PROFILE_PATH, { [USERNAME_PARAM]: username, count: "24" });
+          return [r, r];
+        })()
+      : await Promise.all([
+          call(PROFILE_PATH, { [USERNAME_PARAM]: username }),
+          call(POSTS_PATH, { [USERNAME_PARAM]: username, count: "24" }),
+        ]);
 
     const profile = mapProfile(profileRaw, username);
     const videos = mapVideos(postsRaw);
