@@ -186,8 +186,8 @@ export default function HomePage() {
                         </Link>
                       </div>
 
-                      <div className="bg-black text-primary text-[9px] font-bold px-2 py-1 uppercase">
-                        {account.source} • {new Date(account.lastUpdated).toLocaleDateString()} • {account.isDemo ? 'DEMO DATA' : ''}
+                      <div className="bg-black text-primary text-[9px] font-bold px-2 py-1 uppercase" suppressHydrationWarning>
+                        {account.source} • {new Date(account.lastUpdated).toISOString().split('T')[0]} • {account.isDemo ? 'DEMO DATA' : ''}
                       </div>
                     </CardContent>
                   </Card>

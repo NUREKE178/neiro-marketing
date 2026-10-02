@@ -42,7 +42,11 @@ export default function AnalyticsPage() {
             <p className="text-sm font-medium opacity-70 max-w-xl">{account.bio}</p>
             <div className="flex items-center gap-3 mt-2">
               <span className="text-xs font-black uppercase bg-primary border-2 border-black px-2 py-1">Талдау кезеңі: {dateRange}</span>
+<<<<<<< HEAD
               <span className="text-xs font-bold opacity-60">Соңғы жаңарту: {new Date(account.lastUpdated).toLocaleString()}</span>
+=======
+              <span className="text-xs font-bold opacity-60" suppressHydrationWarning>Соңғы жаңарту: {new Date(account.lastUpdated).toISOString().split('T')[0]}</span>
+>>>>>>> 46ab709 (feat: search any account real check via Business Discovery API + fix hydration error toLocaleDate -> ISO + useLocale hook mounted fix + suppressHydrationWarning)
               <span className="text-xs font-bold opacity-60">Дереккөз: {account.source}</span>
             </div>
           </div>

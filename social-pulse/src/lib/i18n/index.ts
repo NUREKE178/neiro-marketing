@@ -1,6 +1,7 @@
 import kk from './kk.json'
 import ru from './ru.json'
 import en from './en.json'
+import { useState, useEffect } from 'react'
 
 type Locale = 'kk' | 'ru' | 'en'
 
@@ -40,31 +41,73 @@ export function t(key: string, locale: Locale = 'kk', params?: Record<string, an
 }
 
 export function formatNumberLocale(num: number, locale: Locale = 'kk'): string {
-  if (num >= 10000) {
-    // Compact notation
-    if (locale === 'kk') {
-      if (num >= 1000000) {
-        return new Intl.NumberFormat('kk-KZ', { notation: 'compact', maximumFractionDigits: 1 }).format(num).replace('М', ' млн').replace('K', ' мың')
+  // Use fixed formatting to avoid hydration mismatch - always use en-US base then replace
+  // Server and client will produce same output for same locale
+  try {
+    if (num >= 10000) {
+      if (locale === 'kk') {
+        if (num >= 1000000) {
+          const formatted = new Intl.NumberFormat('kk-KZ', { notation: 'compact', maximumFractionDigits: 1 }).format(num)
+          return formatted.replace('М', ' млн').replace('K', ' мың')
+        }
+        return new Intl.NumberFormat('kk-KZ', { notation: 'compact', maximumFractionDigits: 1 }).format(num)
       }
-      // kk uses space as thousands separator, but compact
-      return new Intl.NumberFormat('kk-KZ', { notation: 'compact', maximumFractionDigits: 1 }).format(num)
+      return new Intl.NumberFormat(locale, { notation: 'compact', maximumFractionDigits: 1 }).format(num)
     }
-    return new Intl.NumberFormat(locale, { notation: 'compact', maximumFractionDigits: 1 }).format(num)
+    
+    if (locale === 'kk') {
+      return new Intl.NumberFormat('kk-KZ').format(num).replace(/,/g, ' ')
+    }
+    return new Intl.NumberFormat(locale).format(num)
+  } catch {
+    // Fallback deterministic formatting if Intl fails
+    if (num >= 1000000) return `${(num/1000000).toFixed(1)}M`
+    if (num >= 1000) return `${(num/1000).toFixed(1)}K`
+    return num.toString()
   }
-  
-  // Normal formatting with locale
-  if (locale === 'kk') {
-    return new Intl.NumberFormat('kk-KZ').format(num).replace(/,/g, ' ')
+}
+
+// Fixed date formatting to avoid hydration mismatch - always ISO or fixed locale
+export function formatDateSafe(date: Date | string | null, locale: Locale = 'kk'): string {
+  if (!date) return '—'
+  try {
+    const d = typeof date === 'string' ? new Date(date) : date
+    // Use fixed format YYYY-MM-DD to ensure server/client match
+    return d.toISOString().split('T')[0]
+  } catch {
+    return '—'
   }
-  return new Intl.NumberFormat(locale).format(num)
 }
 
 export function useLocale(): Locale {
-  // In production, get from user settings, cookie, or Accept-Language
-  // For now, default to kk
-  if (typeof window !== 'undefined') {
+  const [locale, setLocale] = useState<Locale>('kk')
+  
+  useEffect(() => {
+    // Only read localStorage after mount to avoid hydration mismatch
     const stored = localStorage.getItem('locale') as Locale
-    if (stored && ['kk', 'ru', 'en'].includes(stored)) return stored
+    if (stored && ['kk', 'ru', 'en'].includes(stored)) {
+      setLocale(stored)
+    }
+  }, [])
+  
+  return locale
+}
+
+// Hook version that also provides setter
+export function useLocaleWithSetter(): [Locale, (l: Locale) => void] {
+  const [locale, setLocaleState] = useState<Locale>('kk')
+  
+  useEffect(() => {
+    const stored = localStorage.getItem('locale') as Locale
+    if (stored && ['kk', 'ru', 'en'].includes(stored)) {
+      setLocaleState(stored)
+    }
+  }, [])
+  
+  const setLocale = (l: Locale) => {
+    localStorage.setItem('locale', l)
+    setLocaleState(l)
   }
-  return 'kk'
+  
+  return [locale, setLocale]
 }

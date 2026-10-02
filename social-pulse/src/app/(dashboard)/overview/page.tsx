@@ -165,12 +165,20 @@ export default function OverviewPage() {
   const stats = data.stats
 
   return (
+<<<<<<< HEAD
     <div className="min-h-screen bg-[#F9F9FB]">
+=======
+    <div className="min-h-screen bg-[#F9F9FB]" suppressHydrationWarning>
+>>>>>>> 46ab709 (feat: search any account real check via Business Discovery API + fix hydration error toLocaleDate -> ISO + useLocale hook mounted fix + suppressHydrationWarning)
       {/* Pull to refresh - Web */}
       <div className="sticky top-0 z-20 bg-[#F9F9FB]/80 backdrop-blur-sm border-b-[3px] border-black/10">
         <div className="max-w-7xl mx-auto px-4 md:px-8 h-2 flex items-center justify-center">
           {data.syncing && (
+<<<<<<< HEAD
             <div className="flex items-center gap-2 text-[11px] font-black uppercase">
+=======
+            <div className="flex items-center gap-2 text-[11px] font-black uppercase" suppressHydrationWarning>
+>>>>>>> 46ab709 (feat: search any account real check via Business Discovery API + fix hydration error toLocaleDate -> ISO + useLocale hook mounted fix + suppressHydrationWarning)
               <div className="w-3 h-3 border-2 border-black border-t-transparent rounded-full animate-spin" />
               {t('overview.syncing', locale)}
             </div>
@@ -178,7 +186,11 @@ export default function OverviewPage() {
         </div>
       </div>
 
+<<<<<<< HEAD
       <div className="p-4 md:p-8 space-y-6 max-w-7xl mx-auto">
+=======
+      <div className="p-4 md:p-8 space-y-6 max-w-7xl mx-auto" suppressHydrationWarning>
+>>>>>>> 46ab709 (feat: search any account real check via Business Discovery API + fix hydration error toLocaleDate -> ISO + useLocale hook mounted fix + suppressHydrationWarning)
         {/* Compact header: avatar + username + platform badge + Last synced + refresh */}
         {data.connectedAccount ? (
           <div className="flex items-center justify-between bg-white border-[3px] border-black shadow-[4px_4px_0px_0px_#000] p-4">
