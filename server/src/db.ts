@@ -65,13 +65,17 @@ const SCHEMA_STATEMENTS = [
     display_name TEXT NOT NULL DEFAULT '',
     avatar_url TEXT,
     bio TEXT NOT NULL DEFAULT '',
-    followers INTEGER NOT NULL DEFAULT 0,
+    followers INTEGER,
     region TEXT,
     region_source TEXT NOT NULL DEFAULT 'unset',
     niche_tags TEXT NOT NULL DEFAULT '[]',
     search_blob TEXT NOT NULL DEFAULT '',
+    source TEXT NOT NULL DEFAULT 'rapidapi_instagram',
+    verification_status TEXT NOT NULL DEFAULT 'partially_verified',
     created_at TEXT NOT NULL,
     last_synced_at TEXT NOT NULL,
+    last_sync_status TEXT NOT NULL DEFAULT 'ok',
+    last_error TEXT,
     UNIQUE(platform, username)
   )`,
   `CREATE TABLE IF NOT EXISTS videos (
@@ -81,17 +85,45 @@ const SCHEMA_STATEMENTS = [
     url TEXT,
     thumbnail_url TEXT,
     caption TEXT NOT NULL DEFAULT '',
-    views INTEGER NOT NULL DEFAULT 0,
-    likes INTEGER NOT NULL DEFAULT 0,
-    comments INTEGER NOT NULL DEFAULT 0,
+    views INTEGER,
+    likes INTEGER,
+    comments INTEGER,
     posted_at TEXT,
     fetched_at TEXT NOT NULL,
     UNIQUE(creator_id, external_id)
+  )`,
+  `CREATE TABLE IF NOT EXISTS connections (
+    id TEXT PRIMARY KEY,
+    owner_id TEXT NOT NULL,
+    platform TEXT NOT NULL CHECK (platform IN ('instagram', 'tiktok')),
+    external_account_id TEXT NOT NULL,
+    username TEXT NOT NULL,
+    access_token TEXT NOT NULL,
+    refresh_token TEXT,
+    token_expires_at TEXT,
+    scopes TEXT NOT NULL DEFAULT '[]',
+    connected_at TEXT NOT NULL,
+    last_sync_at TEXT,
+    last_sync_status TEXT NOT NULL DEFAULT 'never_synced',
+    last_error TEXT,
+    UNIQUE(owner_id, platform)
   )`,
   `CREATE INDEX IF NOT EXISTS idx_videos_creator ON videos(creator_id)`,
   `CREATE INDEX IF NOT EXISTS idx_videos_posted_at ON videos(posted_at)`,
   `CREATE INDEX IF NOT EXISTS idx_creators_region ON creators(region)`,
   `CREATE INDEX IF NOT EXISTS idx_creators_search ON creators(search_blob)`,
+  `CREATE INDEX IF NOT EXISTS idx_connections_owner ON connections(owner_id)`,
+];
+
+// Columns added after the first release — existing local/Turso DBs created
+// before this change won't have them. SQLite has no "ADD COLUMN IF NOT
+// EXISTS", so this just tries each and swallows the "duplicate column"
+// error on a DB that already has it.
+const MIGRATION_STATEMENTS = [
+  `ALTER TABLE creators ADD COLUMN source TEXT NOT NULL DEFAULT 'rapidapi_instagram'`,
+  `ALTER TABLE creators ADD COLUMN verification_status TEXT NOT NULL DEFAULT 'partially_verified'`,
+  `ALTER TABLE creators ADD COLUMN last_sync_status TEXT NOT NULL DEFAULT 'ok'`,
+  `ALTER TABLE creators ADD COLUMN last_error TEXT`,
 ];
 
 let migrated: Promise<void> | null = null;
@@ -102,6 +134,13 @@ export function ensureSchema(): Promise<void> {
     migrated = (async () => {
       for (const stmt of SCHEMA_STATEMENTS) {
         await db.execute(stmt);
+      }
+      for (const stmt of MIGRATION_STATEMENTS) {
+        try {
+          await db.execute(stmt);
+        } catch (err) {
+          if (!(err instanceof Error) || !/duplicate column/i.test(err.message)) throw err;
+        }
       }
     })();
   }

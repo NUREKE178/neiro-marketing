@@ -116,6 +116,39 @@ const kk: Dict = {
 
   "common.followers": "жазылушы",
   "common.errorTitle": "Қате орын алды",
+
+  "nav.settings": "Интеграциялар",
+
+  "verification.verified": "✓ Расталған (OAuth)",
+  "verification.verifiedShort": "✓ Расталған",
+  "verification.partiallyVerified": "Жартылай расталған · 3rd-party",
+  "verification.partiallyVerifiedShort": "Жартылай расталған",
+
+  "analyze.errNotFoundTitle": "Аккаунт табылмады",
+  "analyze.errAuthTitle": "Авторизация қажет",
+  "analyze.errRateLimitTitle": "Сұраныс шегінен асты",
+  "analyze.errSchemaTitle": "Провайдер жауабы күтілгендей келмеді",
+  "analyze.syncFailedBanner": "Соңғы синхрондау сәтсіз аяқталды — {date} мезгіліндегі кэш көрсетілуде.",
+  "analyze.videosWithViewsSub": "{known}/{total} видеода views бар",
+
+  "settings.title": "Интеграциялар",
+  "settings.subtitle": "Instagram/TikTok аккаунтыңызды ресми OAuth арқылы қосыңыз — деректер «Расталған» деп белгіленеді.",
+  "settings.notConfiguredTitle": "Бұл платформа үшін OAuth теңшелмеген",
+  "settings.notConfiguredDesc": "Серверде тиісті CLIENT_ID/SECRET, SESSION_SECRET және PUBLIC_APP_URL env vars жоқ. Толығырақ server/README.md ішінде.",
+  "settings.connectBtn": "Байланыстыру",
+  "settings.reconnectBtn": "Қайта авторизациялау",
+  "settings.connected": "Қосылған",
+  "settings.notConnected": "Қосылмаған",
+  "settings.scopes": "Рұқсаттар",
+  "settings.connectedSince": "Қосылған күні",
+  "settings.lastSync": "Соңғы синхрондау",
+  "settings.lastSyncNever": "Әлі синхрондалмаған",
+  "settings.lastError": "Соңғы қате",
+  "settings.resyncBtn": "Қайта синхрондау",
+  "settings.disconnectBtn": "Ажырату",
+  "settings.tokenExpired": "Байланыс мерзімі өтті — қайта авторизациялаңыз",
+  "settings.connectSuccess": "Сәтті қосылды!",
+  "settings.connectError": "Байланыстыру сәтсіз аяқталды.",
 };
 
 const ru: Dict = {
@@ -226,6 +259,39 @@ const ru: Dict = {
 
   "common.followers": "подписчиков",
   "common.errorTitle": "Произошла ошибка",
+
+  "nav.settings": "Интеграции",
+
+  "verification.verified": "✓ Подтверждено (OAuth)",
+  "verification.verifiedShort": "✓ Подтверждено",
+  "verification.partiallyVerified": "Частично подтверждено · 3rd-party",
+  "verification.partiallyVerifiedShort": "Частично подтверждено",
+
+  "analyze.errNotFoundTitle": "Аккаунт не найден",
+  "analyze.errAuthTitle": "Требуется авторизация",
+  "analyze.errRateLimitTitle": "Превышен лимит запросов",
+  "analyze.errSchemaTitle": "Ответ провайдера не соответствует ожидаемому",
+  "analyze.syncFailedBanner": "Последняя синхронизация не удалась — показан кэш от {date}.",
+  "analyze.videosWithViewsSub": "{known}/{total} видео с данными views",
+
+  "settings.title": "Интеграции",
+  "settings.subtitle": "Подключите аккаунт Instagram/TikTok через официальный OAuth — данные будут отмечены как «Подтверждено».",
+  "settings.notConfiguredTitle": "OAuth для этой платформы не настроен",
+  "settings.notConfiguredDesc": "На сервере нет CLIENT_ID/SECRET, SESSION_SECRET или PUBLIC_APP_URL. Подробнее в server/README.md.",
+  "settings.connectBtn": "Подключить",
+  "settings.reconnectBtn": "Переавторизоваться",
+  "settings.connected": "Подключено",
+  "settings.notConnected": "Не подключено",
+  "settings.scopes": "Разрешения",
+  "settings.connectedSince": "Подключено с",
+  "settings.lastSync": "Последняя синхронизация",
+  "settings.lastSyncNever": "Ещё не синхронизировано",
+  "settings.lastError": "Последняя ошибка",
+  "settings.resyncBtn": "Синхронизировать заново",
+  "settings.disconnectBtn": "Отключить",
+  "settings.tokenExpired": "Срок подключения истёк — переавторизуйтесь",
+  "settings.connectSuccess": "Успешно подключено!",
+  "settings.connectError": "Не удалось подключить.",
 };
 
 const en: Dict = {
@@ -334,6 +400,39 @@ const en: Dict = {
 
   "common.followers": "followers",
   "common.errorTitle": "Something went wrong",
+
+  "nav.settings": "Integrations",
+
+  "verification.verified": "✓ Verified (OAuth)",
+  "verification.verifiedShort": "✓ Verified",
+  "verification.partiallyVerified": "Partially verified · 3rd-party",
+  "verification.partiallyVerifiedShort": "Partially verified",
+
+  "analyze.errNotFoundTitle": "Account not found",
+  "analyze.errAuthTitle": "Authorization required",
+  "analyze.errRateLimitTitle": "Rate limit exceeded",
+  "analyze.errSchemaTitle": "Provider response didn't match the expected shape",
+  "analyze.syncFailedBanner": "The last sync failed — showing cached data from {date}.",
+  "analyze.videosWithViewsSub": "{known}/{total} videos have views data",
+
+  "settings.title": "Integrations",
+  "settings.subtitle": "Connect your Instagram/TikTok account via official OAuth — that data is marked \"Verified\".",
+  "settings.notConfiguredTitle": "OAuth isn't configured for this platform",
+  "settings.notConfiguredDesc": "The server is missing CLIENT_ID/SECRET, SESSION_SECRET or PUBLIC_APP_URL. See server/README.md.",
+  "settings.connectBtn": "Connect",
+  "settings.reconnectBtn": "Reauthorize",
+  "settings.connected": "Connected",
+  "settings.notConnected": "Not connected",
+  "settings.scopes": "Granted scopes",
+  "settings.connectedSince": "Connected since",
+  "settings.lastSync": "Last sync",
+  "settings.lastSyncNever": "Never synced",
+  "settings.lastError": "Last error",
+  "settings.resyncBtn": "Resync",
+  "settings.disconnectBtn": "Disconnect",
+  "settings.tokenExpired": "Connection expired — reauthorize",
+  "settings.connectSuccess": "Connected successfully!",
+  "settings.connectError": "Failed to connect.",
 };
 
 export const dictionaries: Record<Lang, Dict> = { kk, ru, en };

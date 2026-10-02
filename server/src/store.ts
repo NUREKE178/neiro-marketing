@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { db, ensureSchema } from "./db.js";
-import { NormalizedProfile } from "./providers/types.js";
+import { DataSource, NormalizedProfile, VerificationStatus, verificationStatusForSource } from "./providers/types.js";
 import { buildSearchBlob, deriveNicheTags } from "./niche.js";
 import { inferRegionFromText } from "./regions.js";
 
@@ -11,12 +11,17 @@ export interface CreatorRecord {
   display_name: string;
   avatar_url: string | null;
   bio: string;
-  followers: number;
+  /** null = provider didn't report a follower count, never coerced to 0. */
+  followers: number | null;
   region: string | null;
   region_source: "unset" | "inferred" | "manual";
   niche_tags: string;
+  source: DataSource;
+  verification_status: VerificationStatus;
   created_at: string;
   last_synced_at: string;
+  last_sync_status: "ok" | "failed";
+  last_error: string | null;
 }
 
 export interface VideoRecord {
@@ -26,9 +31,9 @@ export interface VideoRecord {
   url: string | null;
   thumbnail_url: string | null;
   caption: string;
-  views: number;
-  likes: number;
-  comments: number;
+  views: number | null;
+  likes: number | null;
+  comments: number | null;
   posted_at: string | null;
   fetched_at: string;
 }
@@ -54,10 +59,11 @@ export async function upsertCreatorFromProfile(profile: NormalizedProfile): Prom
     nicheTags,
     captions: profile.videos.map((v) => v.caption),
   });
+  const verificationStatus = verificationStatusForSource(profile.source);
 
   await db.execute({
-    sql: `INSERT INTO creators (id, platform, username, display_name, avatar_url, bio, followers, region, region_source, niche_tags, search_blob, created_at, last_synced_at)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    sql: `INSERT INTO creators (id, platform, username, display_name, avatar_url, bio, followers, region, region_source, niche_tags, search_blob, source, verification_status, created_at, last_synced_at, last_sync_status, last_error)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'ok', NULL)
           ON CONFLICT(platform, username) DO UPDATE SET
             display_name = excluded.display_name,
             avatar_url = excluded.avatar_url,
@@ -67,7 +73,11 @@ export async function upsertCreatorFromProfile(profile: NormalizedProfile): Prom
             region_source = excluded.region_source,
             niche_tags = excluded.niche_tags,
             search_blob = excluded.search_blob,
-            last_synced_at = excluded.last_synced_at`,
+            source = excluded.source,
+            verification_status = excluded.verification_status,
+            last_synced_at = excluded.last_synced_at,
+            last_sync_status = 'ok',
+            last_error = NULL`,
     args: [
       id,
       profile.platform,
@@ -80,6 +90,8 @@ export async function upsertCreatorFromProfile(profile: NormalizedProfile): Prom
       regionSource,
       JSON.stringify(nicheTags),
       searchBlob,
+      profile.source,
+      verificationStatus,
       existing?.created_at ?? now,
       now,
     ],
@@ -117,6 +129,24 @@ export async function upsertCreatorFromProfile(profile: NormalizedProfile): Prom
   }
 
   return (await getCreatorById(id))!;
+}
+
+/**
+ * Records that a resync attempt failed, WITHOUT touching the creator's
+ * existing (still-displayable) data — so the UI can show "last synced 3
+ * days ago, last attempt failed" instead of either silently serving stale
+ * data as fresh, or wiping it because of a transient failure.
+ */
+export async function recordSyncFailure(
+  platform: string,
+  username: string,
+  errorMessage: string,
+): Promise<void> {
+  await ensureSchema();
+  await db.execute({
+    sql: `UPDATE creators SET last_sync_status = 'failed', last_error = ? WHERE platform = ? AND username = ?`,
+    args: [errorMessage.slice(0, 500), platform, username],
+  });
 }
 
 export async function getCreator(platform: string, username: string): Promise<CreatorRecord | undefined> {
@@ -232,6 +262,102 @@ export async function leaderboard(params: LeaderboardParams) {
     args,
   });
   return rs.rows;
+}
+
+export interface ConnectionRecord {
+  id: string;
+  owner_id: string;
+  platform: "instagram" | "tiktok";
+  external_account_id: string;
+  username: string;
+  access_token: string;
+  refresh_token: string | null;
+  token_expires_at: string | null;
+  scopes: string;
+  connected_at: string;
+  last_sync_at: string | null;
+  last_sync_status: "never_synced" | "ok" | "failed";
+  last_error: string | null;
+}
+
+export interface SaveConnectionInput {
+  ownerId: string;
+  platform: "instagram" | "tiktok";
+  externalAccountId: string;
+  username: string;
+  accessToken: string;
+  refreshToken: string | null;
+  tokenExpiresAt: string | null;
+  scopes: string[];
+}
+
+export async function saveConnection(input: SaveConnectionInput): Promise<ConnectionRecord> {
+  await ensureSchema();
+  const now = new Date().toISOString();
+  const existing = await getConnection(input.ownerId, input.platform);
+  const id = existing?.id ?? randomUUID();
+
+  await db.execute({
+    sql: `INSERT INTO connections (id, owner_id, platform, external_account_id, username, access_token, refresh_token, token_expires_at, scopes, connected_at, last_sync_at, last_sync_status, last_error)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, 'never_synced', NULL)
+          ON CONFLICT(owner_id, platform) DO UPDATE SET
+            external_account_id = excluded.external_account_id,
+            username = excluded.username,
+            access_token = excluded.access_token,
+            refresh_token = excluded.refresh_token,
+            token_expires_at = excluded.token_expires_at,
+            scopes = excluded.scopes,
+            connected_at = excluded.connected_at,
+            last_sync_status = 'never_synced',
+            last_error = NULL`,
+    args: [
+      id,
+      input.ownerId,
+      input.platform,
+      input.externalAccountId,
+      input.username,
+      input.accessToken,
+      input.refreshToken,
+      input.tokenExpiresAt,
+      JSON.stringify(input.scopes),
+      now,
+    ],
+  });
+
+  return (await getConnection(input.ownerId, input.platform))!;
+}
+
+export async function getConnection(
+  ownerId: string,
+  platform: string,
+): Promise<ConnectionRecord | undefined> {
+  await ensureSchema();
+  const rs = await db.execute({
+    sql: `SELECT * FROM connections WHERE owner_id = ? AND platform = ?`,
+    args: [ownerId, platform],
+  });
+  return rs.rows[0] as unknown as ConnectionRecord | undefined;
+}
+
+export async function deleteConnection(ownerId: string, platform: string): Promise<void> {
+  await ensureSchema();
+  await db.execute({
+    sql: `DELETE FROM connections WHERE owner_id = ? AND platform = ?`,
+    args: [ownerId, platform],
+  });
+}
+
+export async function recordConnectionSync(
+  ownerId: string,
+  platform: string,
+  status: "ok" | "failed",
+  error: string | null,
+): Promise<void> {
+  await ensureSchema();
+  await db.execute({
+    sql: `UPDATE connections SET last_sync_at = ?, last_sync_status = ?, last_error = ? WHERE owner_id = ? AND platform = ?`,
+    args: [new Date().toISOString(), status, error?.slice(0, 500) ?? null, ownerId, platform],
+  });
 }
 
 export async function distinctRegions(): Promise<string[]> {

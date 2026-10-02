@@ -4,7 +4,7 @@ import { Badge } from "./Badge";
 import { PlatformIcon } from "./PlatformIcon";
 import { formatCompactNumber } from "../lib/format";
 import { useLanguage } from "../i18n/LanguageContext";
-import type { Platform } from "../lib/api";
+import type { Platform, VerificationStatus } from "../lib/api";
 import styles from "./CreatorCard.module.css";
 
 interface CreatorCardProps {
@@ -16,7 +16,8 @@ interface CreatorCardProps {
   nicheTags: string[];
   totalViews: number;
   totalLikes: number;
-  followers: number;
+  followers: number | null;
+  verificationStatus?: VerificationStatus;
   rank?: number;
 }
 
@@ -30,6 +31,7 @@ export function CreatorCard({
   totalViews,
   totalLikes,
   followers,
+  verificationStatus,
   rank,
 }: CreatorCardProps) {
   const navigate = useNavigate();
@@ -61,10 +63,17 @@ export function CreatorCard({
       </div>
 
       <div className={styles.badges}>
+        {verificationStatus && (
+          <Badge tone={verificationStatus === "verified" ? "lime" : "outline"}>
+            {verificationStatus === "verified" ? t("verification.verifiedShort") : t("verification.partiallyVerifiedShort")}
+          </Badge>
+        )}
         {region && <Badge tone="accent">{region}</Badge>}
-        <Badge tone="outline">
-          {formatCompactNumber(followers)} {t("common.followers")}
-        </Badge>
+        {followers !== null && (
+          <Badge tone="outline">
+            {formatCompactNumber(followers)} {t("common.followers")}
+          </Badge>
+        )}
       </div>
 
       {nicheTags.length > 0 && (

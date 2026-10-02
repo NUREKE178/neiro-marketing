@@ -1,13 +1,32 @@
 export type Platform = "instagram" | "tiktok";
 
+/**
+ * Where a record's numbers came from. RapidAPI (or any unauthenticated
+ * scraper) can only ever be "partially_verified" — it's reading public
+ * pages, not an authenticated API, so there's no cryptographic guarantee
+ * the numbers are current or complete. Only a record fetched through the
+ * account owner's own official OAuth grant is "verified".
+ */
+export type DataSource = "rapidapi_instagram" | "rapidapi_tiktok" | "oauth_instagram" | "oauth_tiktok";
+export type VerificationStatus = "verified" | "partially_verified";
+
+export function verificationStatusForSource(source: DataSource): VerificationStatus {
+  return source.startsWith("oauth_") ? "verified" : "partially_verified";
+}
+
 export interface NormalizedVideo {
   externalId: string;
   url: string | null;
   thumbnailUrl: string | null;
   caption: string;
-  views: number;
-  likes: number;
-  comments: number;
+  /**
+   * null means the provider's response did not include this field at all —
+   * genuinely unknown, never coerced to 0. 0 means the provider explicitly
+   * reported zero.
+   */
+  views: number | null;
+  likes: number | null;
+  comments: number | null;
   /** ISO 8601, or null if the provider didn't return a timestamp */
   postedAt: string | null;
 }
@@ -18,34 +37,18 @@ export interface NormalizedProfile {
   displayName: string;
   avatarUrl: string | null;
   bio: string;
-  followers: number;
+  /** null if the provider's response did not include a follower count. */
+  followers: number | null;
   videos: NormalizedVideo[];
+  source: DataSource;
+  retrievedAt: string;
 }
 
 export interface SocialProvider {
   platform: Platform;
+  source: DataSource;
   /** Fetches a public profile + its recent videos/reels/posts in one normalized shape. */
   fetchProfile(username: string): Promise<NormalizedProfile>;
-}
-
-export class ProviderNotConfiguredError extends Error {
-  constructor(platform: Platform) {
-    super(
-      `${platform} deректер провайдері теңшелмеген: RAPIDAPI_KEY (және тиісті RAPIDAPI_${platform.toUpperCase()}_HOST) .env файлында жоқ.`,
-    );
-    this.name = "ProviderNotConfiguredError";
-  }
-}
-
-export class ProviderRequestError extends Error {
-  constructor(
-    public platform: Platform,
-    public status: number,
-    message: string,
-  ) {
-    super(message);
-    this.name = "ProviderRequestError";
-  }
 }
 
 /** Accepts a raw @handle, bare username, or full profile URL and returns the bare username. */

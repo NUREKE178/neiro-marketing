@@ -11,7 +11,7 @@ import { ViewsChart } from "../../components/ViewsChart";
 import { SegmentedControl } from "../../components/SegmentedControl";
 import { useLanguage } from "../../i18n/LanguageContext";
 import { api } from "../../lib/api";
-import type { ApiError, City, Creator, Platform, Video } from "../../lib/api";
+import type { AccountStats, ApiError, City, Creator, Platform, Video } from "../../lib/api";
 import { formatCompactNumber, formatDate } from "../../lib/format";
 import styles from "./AnalyzePage.module.css";
 
@@ -22,10 +22,12 @@ export function AnalyzePage() {
   const { platform, username } = useParams<{ platform: Platform; username: string }>();
   const [creator, setCreator] = useState<Creator | null>(null);
   const [videos, setVideos] = useState<Video[]>([]);
+  const [stats, setStats] = useState<AccountStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [errorCode, setErrorCode] = useState<string | undefined>();
   const [errorDetail, setErrorDetail] = useState<string | undefined>();
+  const [syncError, setSyncError] = useState<string | null>(null);
   const [sort, setSort] = useState<SortMode>("views");
   const [cities, setCities] = useState<City[]>([]);
 
@@ -39,6 +41,7 @@ export function AnalyzePage() {
     setLoading(true);
     setErrorMsg(null);
     setErrorCode(undefined);
+    setSyncError(null);
 
     api
       .analyze(platform, username)
@@ -46,6 +49,8 @@ export function AnalyzePage() {
         if (cancelled) return;
         setCreator(res.creator);
         setVideos(res.videos);
+        setStats(res.stats);
+        if (res.syncError) setSyncError(res.syncError.message);
       })
       .catch(async (err: ApiError) => {
         if (cancelled) return;
@@ -72,24 +77,15 @@ export function AnalyzePage() {
 
   const sortedVideos = useMemo(() => {
     const copy = [...videos];
-    if (sort === "views") copy.sort((a, b) => b.views - a.views);
+    if (sort === "views") copy.sort((a, b) => (b.views ?? -1) - (a.views ?? -1));
     else copy.sort((a, b) => (b.posted_at ?? "").localeCompare(a.posted_at ?? ""));
     return copy;
   }, [videos, sort]);
 
-  const stats = useMemo(() => {
-    const totalViews = videos.reduce((s, v) => s + v.views, 0);
-    const totalLikes = videos.reduce((s, v) => s + v.likes, 0);
-    const totalComments = videos.reduce((s, v) => s + v.comments, 0);
-    const avgViews = videos.length ? Math.round(totalViews / videos.length) : 0;
-    const engagement = totalViews ? (((totalLikes + totalComments) / totalViews) * 100).toFixed(2) : "0";
-    return { totalViews, totalLikes, totalComments, avgViews, engagement };
-  }, [videos]);
-
   const chartPoints = useMemo(
     () =>
-      [...videos]
-        .filter((v) => v.posted_at)
+      videos
+        .filter((v): v is Video & { views: number } => v.posted_at !== null && v.views !== null)
         .sort((a, b) => (a.posted_at ?? "").localeCompare(b.posted_at ?? ""))
         .slice(-14)
         .map((v) => ({ label: formatDate(v.posted_at), value: v.views })),
@@ -112,9 +108,15 @@ export function AnalyzePage() {
           title={
             errorCode === "PROVIDER_NOT_CONFIGURED"
               ? t("analyze.errProviderTitle")
-              : errorCode === "PROVIDER_REQUEST_FAILED"
-                ? t("analyze.errRequestTitle")
-                : t("analyze.errGenericTitle")
+              : errorCode === "ACCOUNT_NOT_FOUND"
+                ? t("analyze.errNotFoundTitle")
+                : errorCode === "PROVIDER_AUTH_ERROR"
+                  ? t("analyze.errAuthTitle")
+                  : errorCode === "PROVIDER_RATE_LIMITED"
+                    ? t("analyze.errRateLimitTitle")
+                    : errorCode === "SCHEMA_MAPPING_ERROR"
+                      ? t("analyze.errSchemaTitle")
+                      : t("analyze.errGenericTitle")
           }
           description={errorCode === "PROVIDER_NOT_CONFIGURED" ? t("analyze.errProviderDesc") : errorMsg}
         >
@@ -131,6 +133,11 @@ export function AnalyzePage() {
       {errorCode === "STALE_NO_PROVIDER" && (
         <Card tint="secondary" padding="sm" className={styles.staleBanner}>
           {t("analyze.staleBanner", { date: formatDate(creator.last_synced_at) })}
+        </Card>
+      )}
+      {syncError && (
+        <Card tint="secondary" padding="sm" className={styles.staleBanner}>
+          {t("analyze.syncFailedBanner", { date: formatDate(creator.last_synced_at) })} ({syncError})
         </Card>
       )}
 
@@ -151,27 +158,42 @@ export function AnalyzePage() {
             <span className={styles.handle}>@{creator.username}</span>
             {creator.bio && <p className={styles.bio}>{creator.bio}</p>}
             <div className={styles.badgeRow}>
-              <Badge tone="primary">
-                {formatCompactNumber(creator.followers)} {t("common.followers")}
+              <Badge tone={creator.verification_status === "verified" ? "lime" : "outline"}>
+                {creator.verification_status === "verified" ? t("verification.verified") : t("verification.partiallyVerified")}
               </Badge>
+              {creator.followers !== null && (
+                <Badge tone="primary">
+                  {formatCompactNumber(creator.followers)} {t("common.followers")}
+                </Badge>
+              )}
               <RegionEditor creator={creator} cities={cities} onChange={setCreator} />
             </div>
           </div>
         </div>
       </Card>
 
-      <div className={styles.stats}>
-        <StatTile label={t("analyze.statTotalViews")} value={formatCompactNumber(stats.totalViews)} tint="primary" />
-        <StatTile label={t("analyze.statTotalLikes")} value={formatCompactNumber(stats.totalLikes)} tint="secondary" />
-        <StatTile label={t("analyze.statAvgViews")} value={formatCompactNumber(stats.avgViews)} />
-        <StatTile
-          label={t("analyze.statEngagement")}
-          value={`${stats.engagement}%`}
-          tint="lime"
-          sub={t("analyze.statEngagementSub")}
-        />
-        <StatTile label={t("analyze.statVideoCount")} value={String(videos.length)} />
-      </div>
+      {stats && (
+        <div className={styles.stats}>
+          <StatTile label={t("analyze.statTotalViews")} value={formatCompactNumber(stats.totalViews)} tint="primary" />
+          <StatTile label={t("analyze.statTotalLikes")} value={formatCompactNumber(stats.totalLikes)} tint="secondary" />
+          <StatTile label={t("analyze.statAvgViews")} value={formatCompactNumber(stats.avgViews)} />
+          <StatTile
+            label={t("analyze.statEngagement")}
+            value={stats.engagementRate !== null ? `${stats.engagementRate}%` : "—"}
+            tint="lime"
+            sub={t("analyze.statEngagementSub")}
+          />
+          <StatTile
+            label={t("analyze.statVideoCount")}
+            value={String(stats.videoCount)}
+            sub={
+              stats.videosWithViews < stats.videoCount
+                ? t("analyze.videosWithViewsSub", { known: stats.videosWithViews, total: stats.videoCount })
+                : undefined
+            }
+          />
+        </div>
+      )}
 
       {chartPoints.length > 1 && (
         <Card padding="md">

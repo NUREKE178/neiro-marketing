@@ -159,6 +159,7 @@ export function LeaderboardPage() {
               totalViews={r.period_views}
               totalLikes={r.period_likes}
               followers={r.followers}
+              verificationStatus={r.verification_status}
             />
           ))}
         </div>

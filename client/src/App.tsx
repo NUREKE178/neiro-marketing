@@ -5,6 +5,7 @@ import { HomePage } from "./pages/Home/HomePage";
 import { DiscoverPage } from "./pages/Discover/DiscoverPage";
 import { AnalyzePage } from "./pages/Analyze/AnalyzePage";
 import { LeaderboardPage } from "./pages/Leaderboard/LeaderboardPage";
+import { SettingsPage } from "./pages/Settings/SettingsPage";
 import { NotFoundPage } from "./pages/NotFound/NotFoundPage";
 
 export default function App() {
@@ -17,6 +18,7 @@ export default function App() {
           <Route path="/discover" element={<DiscoverPage />} />
           <Route path="/analyze/:platform/:username" element={<AnalyzePage />} />
           <Route path="/leaderboard" element={<LeaderboardPage />} />
+          <Route path="/settings" element={<SettingsPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </main>

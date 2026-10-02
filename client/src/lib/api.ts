@@ -7,6 +7,9 @@ export interface City {
   lng: number;
 }
 
+export type DataSource = "rapidapi_instagram" | "rapidapi_tiktok" | "oauth_instagram" | "oauth_tiktok";
+export type VerificationStatus = "verified" | "partially_verified";
+
 export interface Creator {
   id: string;
   platform: Platform;
@@ -14,12 +17,17 @@ export interface Creator {
   display_name: string;
   avatar_url: string | null;
   bio: string;
-  followers: number;
+  /** null = the data source never reported a follower count — not the same as 0. */
+  followers: number | null;
   region: string | null;
   region_source: "unset" | "inferred" | "manual";
   niche_tags: string;
+  source: DataSource;
+  verification_status: VerificationStatus;
   created_at: string;
   last_synced_at: string;
+  last_sync_status: "ok" | "failed";
+  last_error: string | null;
 }
 
 export interface Video {
@@ -29,11 +37,22 @@ export interface Video {
   url: string | null;
   thumbnail_url: string | null;
   caption: string;
-  views: number;
-  likes: number;
-  comments: number;
+  /** null = not reported by the data source, distinct from a real 0. */
+  views: number | null;
+  likes: number | null;
+  comments: number | null;
   posted_at: string | null;
   fetched_at: string;
+}
+
+export interface AccountStats {
+  totalViews: number | null;
+  totalLikes: number | null;
+  totalComments: number | null;
+  avgViews: number | null;
+  engagementRate: string | null;
+  videoCount: number;
+  videosWithViews: number;
 }
 
 export interface SearchResult extends Creator {
@@ -84,8 +103,27 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return body as T;
 }
 
+export interface ConnectionStatus {
+  configured: boolean;
+  connected?: boolean;
+  username?: string;
+  scopes?: string[];
+  connectedAt?: string;
+  lastSyncAt?: string | null;
+  lastSyncStatus?: "never_synced" | "ok" | "failed";
+  lastError?: string | null;
+  tokenExpired?: boolean;
+  reason?: string;
+}
+
 export const api = {
-  configStatus: () => request<{ instagramConfigured: boolean; tiktokConfigured: boolean }>("/config/status"),
+  configStatus: () =>
+    request<{
+      instagramConfigured: boolean;
+      tiktokConfigured: boolean;
+      instagramOAuthConfigured: boolean;
+      tiktokOAuthConfigured: boolean;
+    }>("/config/status"),
 
   regions: () => request<{ cities: City[]; usedRegions: string[] }>("/regions"),
 
@@ -95,7 +133,12 @@ export const api = {
   }),
 
   analyze: (platform: Platform, handle: string) =>
-    request<{ creator: Creator; videos: Video[] }>("/creators/analyze", {
+    request<{
+      creator: Creator;
+      videos: Video[];
+      stats: AccountStats;
+      syncError?: { code: string; message: string };
+    }>("/creators/analyze", {
       method: "POST",
       body: JSON.stringify({ platform, handle }),
     }),
@@ -135,6 +178,16 @@ export const api = {
     return request<{ results: LeaderboardEntry[]; range: { from: string; to: string } }>(
       `/leaderboard?${qs}`,
     );
+  },
+
+  auth: {
+    status: (platform: Platform) => request<ConnectionStatus>(`/auth/${platform}/status`),
+    /** Not a fetch — a full-page navigation into the OAuth consent screen. */
+    startUrl: (platform: Platform) => `${API_BASE}/auth/${platform}/start`,
+    resync: (platform: Platform) =>
+      request<{ creator: Creator }>(`/auth/${platform}/resync`, { method: "POST" }),
+    disconnect: (platform: Platform) =>
+      request<{ ok: true }>(`/auth/${platform}/disconnect`, { method: "POST" }),
   },
 };
 

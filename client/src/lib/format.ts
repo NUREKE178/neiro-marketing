@@ -1,4 +1,6 @@
-export function formatCompactNumber(value: number): string {
+/** null means the data source never reported this number — shown as "—", never coerced to 0. */
+export function formatCompactNumber(value: number | null): string {
+  if (value === null) return "—";
   return new Intl.NumberFormat("kk-KZ", { notation: "compact", maximumFractionDigits: 1 }).format(value);
 }
 

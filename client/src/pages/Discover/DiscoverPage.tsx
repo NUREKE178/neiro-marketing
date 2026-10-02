@@ -159,6 +159,7 @@ export function DiscoverPage() {
               totalViews={r.total_views}
               totalLikes={r.total_likes}
               followers={r.followers}
+              verificationStatus={r.verification_status}
             />
           ))}
         </div>
