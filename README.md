@@ -28,7 +28,7 @@ npm install
 npm run dev             # http://localhost:5173
 ```
 
-Деректер демо/mock емес — RapidAPI арқылы нақты Instagram/TikTok аккаунттарынан алынады. Толық нұсқау: [`server/README.md`](server/README.md).
+Деректер демо/mock емес — екі нақты дерек көзі бар: **RapidAPI** (кез келген ашық аккаунтты іздеу, "Жартылай расталған" деп белгіленеді) және **ресми OAuth** (`/settings` беті — тек өз аккаунтыңызды қосу, "✓ Расталған" деп белгіленеді). Толық нұсқау, екеуінің айырмашылығы және OAuth app тіркеу қадамдары: [`server/README.md`](server/README.md).
 
 ---
 
@@ -39,12 +39,15 @@ npm run dev             # http://localhost:5173
 1. [vercel.com/new](https://vercel.com/new) → **Import Git Repository** → `NUREKE178/neiro-marketing` таңда.
 2. Vercel `vercel.json`-ды автоматты түрде таниды (build command, output, `/api` routing — бәрі дайын, қосымша баптау керек емес).
 3. **Environment Variables** бөлімінде қос:
-   - `RAPIDAPI_KEY` (міндетті — [server/README.md](server/README.md#getting-a-rapidapi-key-required--there-is-no-demo-mode))
+   - `RAPIDAPI_KEY` (міндетті — [server/README.md](server/README.md#data-source-1-rapidapi-required--there-is-no-demo-mode))
    - `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN` (міндетті — Vercel-де жергілікті файл жүйесі жоқ, [server/README.md](server/README.md#database) қара)
-   - (міндетті емес) `RAPIDAPI_INSTAGRAM_HOST`, `RAPIDAPI_TIKTOK_HOST` — егер жазылған RapidAPI өнімдерің әдепкіден өзгеше болса
+   - (міндетті емес, тек RapidAPI өнімің әдепкіден өзгеше болса) `RAPIDAPI_INSTAGRAM_HOST`/`RAPIDAPI_TIKTOK_HOST` және тиісті `*_PROFILE_PATH`/`*_POSTS_PATH`/`*_USERNAME_PARAM`
+   - (міндетті емес, "өз аккаунтын қосу" OAuth мүмкіндігі үшін) `SESSION_SECRET`, `PUBLIC_APP_URL`, `INSTAGRAM_CLIENT_ID`/`SECRET`, `TIKTOK_CLIENT_KEY`/`SECRET` — толық тіркеу қадамдары [server/README.md](server/README.md#data-source-2-official-oauth-authorizeddataimport)
 4. **Deploy** бас. Бірнеше минуттан кейін `https://<жоба-аты>.vercel.app` дайын.
 
 Кейін әр push (осы бранчқа немесе `main`-ге, Vercel жоба баптауына байланысты) автоматты redeploy жасайды.
+
+⚠️ **OAuth шектеуі:** "Өз аккаунтын қосу" (`/settings`) сессия cookie-іне негізделген, ол тек веб-нұсқада (same-origin) жұмыс істейді. Android/Windows қосымшалары (төменде) `VITE_API_BASE_URL` арқылы сыртқы API-ге сұраныс жібергендіктен, cookie жұмыс істемейді — OAuth байланыстыру қазірше тек веб-браузерде қолжетімді. RapidAPI арқылы кез келген аккаунтты талдау барлық платформада бірдей жұмыс істейді.
 
 ## 2. Android (.apk)
 
