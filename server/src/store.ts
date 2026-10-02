@@ -360,6 +360,143 @@ export async function recordConnectionSync(
   });
 }
 
+export interface ContentDraftRecord {
+  id: string;
+  owner_id: string;
+  platform: "instagram" | "tiktok";
+  creator_id: string | null;
+  topic: string;
+  hook: string;
+  script: string;
+  caption: string;
+  hashtags: string;
+  status: "idea" | "draft" | "scheduled" | "posted" | "archived";
+  scheduled_at: string | null;
+  linked_video_id: string | null;
+  ai_model: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateDraftInput {
+  ownerId: string;
+  platform: "instagram" | "tiktok";
+  creatorId: string | null;
+  topic: string;
+  hook: string;
+  script: string;
+  caption: string;
+  hashtags: string[];
+  aiModel: string | null;
+  status?: ContentDraftRecord["status"];
+}
+
+export async function createDraft(input: CreateDraftInput): Promise<ContentDraftRecord> {
+  await ensureSchema();
+  const id = randomUUID();
+  const now = new Date().toISOString();
+  await db.execute({
+    sql: `INSERT INTO content_drafts (id, owner_id, platform, creator_id, topic, hook, script, caption, hashtags, status, scheduled_at, linked_video_id, ai_model, created_at, updated_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL, ?, ?, ?)`,
+    args: [
+      id,
+      input.ownerId,
+      input.platform,
+      input.creatorId,
+      input.topic,
+      input.hook,
+      input.script,
+      input.caption,
+      JSON.stringify(input.hashtags),
+      input.status ?? "idea",
+      input.aiModel,
+      now,
+      now,
+    ],
+  });
+  return (await getDraft(id, input.ownerId))!;
+}
+
+export async function listDrafts(ownerId: string): Promise<ContentDraftRecord[]> {
+  await ensureSchema();
+  const rs = await db.execute({
+    sql: `SELECT * FROM content_drafts WHERE owner_id = ? ORDER BY updated_at DESC`,
+    args: [ownerId],
+  });
+  return rs.rows as unknown as ContentDraftRecord[];
+}
+
+export async function getDraft(id: string, ownerId: string): Promise<ContentDraftRecord | undefined> {
+  await ensureSchema();
+  const rs = await db.execute({
+    sql: `SELECT * FROM content_drafts WHERE id = ? AND owner_id = ?`,
+    args: [id, ownerId],
+  });
+  return rs.rows[0] as unknown as ContentDraftRecord | undefined;
+}
+
+export interface UpdateDraftInput {
+  topic?: string;
+  hook?: string;
+  script?: string;
+  caption?: string;
+  hashtags?: string[];
+  status?: ContentDraftRecord["status"];
+  scheduledAt?: string | null;
+  linkedVideoId?: string | null;
+}
+
+const DRAFT_FIELD_MAP: Record<keyof UpdateDraftInput, string> = {
+  topic: "topic",
+  hook: "hook",
+  script: "script",
+  caption: "caption",
+  hashtags: "hashtags",
+  status: "status",
+  scheduledAt: "scheduled_at",
+  linkedVideoId: "linked_video_id",
+};
+
+export async function updateDraft(
+  id: string,
+  ownerId: string,
+  patch: UpdateDraftInput,
+): Promise<ContentDraftRecord | undefined> {
+  await ensureSchema();
+  const sets: string[] = [];
+  const args: (string | null)[] = [];
+
+  for (const [key, column] of Object.entries(DRAFT_FIELD_MAP) as [keyof UpdateDraftInput, string][]) {
+    // `undefined` means "the caller didn't send this field" (skip it) —
+    // distinct from an explicit `null`, which is a real value (e.g.
+    // unlinking a video). Using `key in patch` here instead would treat an
+    // omitted field the same as `undefined`-valued one and overwrite NOT
+    // NULL columns like `topic` with NULL on a partial PATCH.
+    const value = patch[key];
+    if (value === undefined) continue;
+    sets.push(`${column} = ?`);
+    args.push(key === "hashtags" ? JSON.stringify(value ?? []) : (value as string | null) ?? null);
+  }
+  if (sets.length === 0) return getDraft(id, ownerId);
+
+  sets.push("updated_at = ?");
+  args.push(new Date().toISOString());
+
+  await db.execute({
+    sql: `UPDATE content_drafts SET ${sets.join(", ")} WHERE id = ? AND owner_id = ?`,
+    args: [...args, id, ownerId],
+  });
+  return getDraft(id, ownerId);
+}
+
+export async function deleteDraft(id: string, ownerId: string): Promise<void> {
+  await ensureSchema();
+  await db.execute({
+    sql: `DELETE FROM content_drafts WHERE id = ? AND owner_id = ?`,
+    args: [id, ownerId],
+  });
+}
+
 export async function distinctRegions(): Promise<string[]> {
   await ensureSchema();
   const rs = await db.execute(

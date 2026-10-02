@@ -69,6 +69,12 @@ The old "Instagram Basic Display API" is deprecated; this is the current path. *
 
 Token refresh (TikTok's short-lived access token + its refresh_token, Instagram's 60-day long-lived token renewal) is **not implemented** — a connection works until its token expires, then Settings shows "Connection expired → Reauthorize" rather than silently failing. Building full refresh logic without being able to test it against live APIs would just be more unverified code; this is the honest stopping point for this pass.
 
+## AI Content Studio (`/studio`)
+
+A third, independent piece: `services/AIGenerationService.ts` calls the official **Anthropic Messages API** (first-party, not a scraper — `ANTHROPIC_API_KEY`, optional `AI_MODEL` override, defaults to `claude-sonnet-5-5`) to generate 3 short-video content ideas (hook/script/caption/hashtags) for a niche, via forced tool-use so the response is always structured JSON, never free text that has to be guessed at. If a creator has connected their own account (§ above), generation is grounded in that creator's actual captions + view/like counts — passed as context, not training data — so ideas reflect what has actually worked for them instead of generic advice. Like the two data sources, missing `ANTHROPIC_API_KEY` means `/studio`'s Generate tab shows a clean "not configured" state, never a fake idea.
+
+Generated ideas aren't persisted until the user explicitly saves one — saved ideas become rows in `content_drafts` (see [Data model](#data-model)), which the Studio's planning board reads/writes via `routes/studio.ts` (`/api/studio/*`), scoped to the same session cookie as OAuth connections. A draft can be linked to one of the owner's own (OAuth-verified) videos once posted, so the UI can show the generated plan next to that video's real views/likes — again, only ever real numbers already in the DB, nothing invented for the comparison.
+
 ## Database
 
 Local dev needs no setup — defaults to an embedded SQLite file at `server/data/neiro-marketing.sqlite`. In production on Vercel, serverless functions have no persistent disk, so point it at a free [Turso](https://turso.tech) database (same SQL dialect, `@libsql/client` talks to both transparently):
@@ -87,6 +93,7 @@ Schema migrations run automatically on first request (`ensureSchema()` in `db.ts
 - **`creators`** — one row per (platform, username). `source` (`rapidapi_instagram`/`rapidapi_tiktok`/`oauth_instagram`/`oauth_tiktok`) and the derived `verification_status` (`verified` only for an `oauth_*` source) drive the UI badge directly — trust isn't inferred from whether a number happens to be nonzero. `last_sync_status`/`last_error` let a failed resync keep showing the last-known-good row instead of either hiding the failure or wiping good data. `region`/`region_source` come from a static Kazakhstan city list in `src/regions.ts` (IG/TikTok don't expose structured location, so this is inferred from bio text or set manually) — never upgraded past what the text actually says.
 - **`videos`** — one row per video/reel. `views`/`likes`/`comments` are nullable: `null` means the data source didn't report that field at all, `0` means it explicitly reported zero. Never conflated — see `services/AnalyticsService.ts` and its tests.
 - **`connections`** — one row per (owner browser, platform) for OAuth. Tokens are stored AES-256-GCM encrypted; only `services/AuthorizedDataImport.ts` ever decrypts them. No user-accounts system was added — a connection is scoped to a signed, stateless session cookie identifying "this browser," which is the right amount of auth for "let someone link their own account" without a full login system.
+- **`content_drafts`** — one row per AI Content Studio idea/draft, scoped to the same owner_id session cookie as `connections` (no accounts system here either). `status` (`idea → draft → scheduled → posted → archived`) drives the planning board's columns; `creator_id` is the own-account creator generation was grounded on, if any; `linked_video_id` points at a real video once posted, so planned-vs-actual never needs an invented metric.
 
 Deliberately **not** a fully normalized EAV metrics table (one row per metric with `source`/`retrieved_at`/`verification_status` each) even though that's the textbook shape for "track provenance per number" — the denormalized `videos` table keeps the existing search/leaderboard SQL simple, and `source`/`verification_status` live at the creator level since in practice an entire sync is one source, not a per-field mix.
 
@@ -106,10 +113,15 @@ Deliberately **not** a fully normalized EAV metrics table (one row per metric wi
 | `GET /api/auth/:platform/start` → `/callback` | OAuth authorization-code flow |
 | `POST /api/auth/:platform/resync` | re-fetch the connected account's own data |
 | `POST /api/auth/:platform/disconnect` | removes the stored connection |
+| `POST /api/studio/generate` | `{ platform, topic, useOwnData }` → 3 AI-generated ideas (hook/script/caption/hashtags), not yet saved |
+| `GET /api/studio/drafts` | this browser's saved drafts |
+| `POST /api/studio/drafts` | save a generated (or blank) idea as a draft |
+| `PATCH /api/studio/drafts/:id` | edit a draft / change its status / schedule it / link it to a real video |
+| `DELETE /api/studio/drafts/:id` | removes a draft |
 
 ## Tests
 
 ```bash
 npm test
 ```
-29 `node:test` tests across `providers/httpClient`, `providers/instagram/rapidapi`, `services/AnalyticsService`, `niche`, `regions` — status-code classification, null-vs-zero handling, schema-mismatch detection, and the region/niche matching logic. Excluded from the production build (`tsconfig.json`'s `exclude`). No synthetic data touches the real DB or UI — these are pure-function/mocked-fetch unit tests only.
+37 `node:test` tests across `providers/httpClient`, `providers/instagram/rapidapi`, `services/AnalyticsService`, `services/AIGenerationService`, `niche`, `regions` — status-code classification, null-vs-zero handling, schema-mismatch detection, the AI tool-use response mapping, and the region/niche matching logic. Excluded from the production build (`tsconfig.json`'s `exclude`). No synthetic data touches the real DB or UI — these are pure-function/mocked-fetch unit tests only.

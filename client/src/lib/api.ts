@@ -103,6 +103,33 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return body as T;
 }
 
+export type DraftStatus = "idea" | "draft" | "scheduled" | "posted" | "archived";
+
+export interface ContentIdea {
+  hook: string;
+  script: string;
+  caption: string;
+  hashtags: string[];
+}
+
+export interface Draft {
+  id: string;
+  owner_id: string;
+  platform: Platform;
+  creator_id: string | null;
+  topic: string;
+  hook: string;
+  script: string;
+  caption: string;
+  hashtags: string[];
+  status: DraftStatus;
+  scheduled_at: string | null;
+  linked_video_id: string | null;
+  ai_model: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface ConnectionStatus {
   configured: boolean;
   connected?: boolean;
@@ -123,6 +150,7 @@ export const api = {
       tiktokConfigured: boolean;
       instagramOAuthConfigured: boolean;
       tiktokOAuthConfigured: boolean;
+      aiConfigured: boolean;
     }>("/config/status"),
 
   regions: () => request<{ cities: City[]; usedRegions: string[] }>("/regions"),
@@ -178,6 +206,47 @@ export const api = {
     return request<{ results: LeaderboardEntry[]; range: { from: string; to: string } }>(
       `/leaderboard?${qs}`,
     );
+  },
+
+  studio: {
+    generate: (platform: Platform, topic: string, useOwnData: boolean) =>
+      request<{ ideas: ContentIdea[]; model: string; groundedOnOwnData: boolean }>("/studio/generate", {
+        method: "POST",
+        body: JSON.stringify({ platform, topic, useOwnData }),
+      }),
+    listDrafts: () => request<{ drafts: Draft[] }>("/studio/drafts"),
+    createDraft: (input: {
+      platform: Platform;
+      creatorId?: string | null;
+      topic: string;
+      hook: string;
+      script: string;
+      caption: string;
+      hashtags: string[];
+      aiModel?: string | null;
+    }) =>
+      request<{ draft: Draft }>("/studio/drafts", {
+        method: "POST",
+        body: JSON.stringify(input),
+      }),
+    updateDraft: (
+      id: string,
+      patch: Partial<{
+        topic: string;
+        hook: string;
+        script: string;
+        caption: string;
+        hashtags: string[];
+        status: DraftStatus;
+        scheduledAt: string | null;
+        linkedVideoId: string | null;
+      }>,
+    ) =>
+      request<{ draft: Draft }>(`/studio/drafts/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify(patch),
+      }),
+    deleteDraft: (id: string) => request<{ ok: true }>(`/studio/drafts/${id}`, { method: "DELETE" }),
   },
 
   auth: {

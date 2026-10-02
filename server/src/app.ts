@@ -4,12 +4,14 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import { router } from "./routes.js";
 import { authRouter } from "./routes/auth.js";
+import { studioRouter } from "./routes/studio.js";
 
 export const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(cookieParser());
 app.use("/api/auth", authRouter);
+app.use("/api/studio", studioRouter);
 app.use("/api", router);
 app.get("/api/health", (_req, res) => res.json({ ok: true }));
 

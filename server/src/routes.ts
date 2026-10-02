@@ -26,6 +26,7 @@ import { findCityByIdOrName, KZ_CITIES, nearestCity } from "./regions.js";
 import { isInstagramOAuthConfigured } from "./providers/instagram/oauth.js";
 import { isTiktokOAuthConfigured } from "./providers/tiktok/oauth.js";
 import { isSessionConfigured } from "./services/sessionCookie.js";
+import { isAiConfigured } from "./services/AIGenerationService.js";
 
 export const router = Router();
 
@@ -45,6 +46,7 @@ router.get("/config/status", (_req, res) => {
     tiktokConfigured: rapidApiReady,
     instagramOAuthConfigured: isSessionConfigured() && isInstagramOAuthConfigured(),
     tiktokOAuthConfigured: isSessionConfigured() && isTiktokOAuthConfigured(),
+    aiConfigured: isSessionConfigured() && isAiConfigured(),
   });
 });
 

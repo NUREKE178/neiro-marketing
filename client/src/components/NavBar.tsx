@@ -8,6 +8,7 @@ const links: { to: string; key: string; end?: boolean }[] = [
   { to: "/", key: "nav.home", end: true },
   { to: "/discover", key: "nav.discover" },
   { to: "/leaderboard", key: "nav.leaderboard" },
+  { to: "/studio", key: "nav.studio" },
   { to: "/settings", key: "nav.settings" },
 ];
 

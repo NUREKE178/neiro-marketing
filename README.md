@@ -1,6 +1,6 @@
 # NEIRO
 
-Instagram/TikTok креатор аналитика платформасы: аккаунтты талдау (views/likes/видео тізімі), геолокация бойынша ниша ізделеу, апталық Топ‑5 рейтинг. Neo-brutalism дизайн. Web + Android + Windows.
+Instagram/TikTok креатор аналитика платформасы: аккаунтты талдау (views/likes/видео тізімі), геолокация бойынша ниша ізделеу, апталық Топ‑5 рейтинг, **AI Content Studio** (`/studio` — ниша бойынша контент идеясын AI-мен генерациялау, жоспарлау тақтасы, жарияланғаннан кейін нақты нәтижемен салыстыру). Neo-brutalism дизайн. Web + Android + Windows.
 
 ## Құрылым
 
@@ -43,6 +43,7 @@ npm run dev             # http://localhost:5173
    - `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN` (міндетті — Vercel-де жергілікті файл жүйесі жоқ, [server/README.md](server/README.md#database) қара)
    - (міндетті емес, тек RapidAPI өнімің әдепкіден өзгеше болса) `RAPIDAPI_INSTAGRAM_HOST`/`RAPIDAPI_TIKTOK_HOST` және тиісті `*_PROFILE_PATH`/`*_POSTS_PATH`/`*_USERNAME_PARAM`
    - (міндетті емес, "өз аккаунтын қосу" OAuth мүмкіндігі үшін) `SESSION_SECRET`, `PUBLIC_APP_URL`, `INSTAGRAM_CLIENT_ID`/`SECRET`, `TIKTOK_CLIENT_KEY`/`SECRET` — толық тіркеу қадамдары [server/README.md](server/README.md#data-source-2-official-oauth-authorizeddataimport)
+   - (міндетті емес, **AI Content Studio** (`/studio`) үшін) `ANTHROPIC_API_KEY` — толығырақ [server/README.md](server/README.md#ai-content-studio-studio)
 4. **Deploy** бас. Бірнеше минуттан кейін `https://<жоба-аты>.vercel.app` дайын.
 
 Кейін әр push (осы бранчқа немесе `main`-ге, Vercel жоба баптауына байланысты) автоматты redeploy жасайды.

@@ -108,11 +108,37 @@ const SCHEMA_STATEMENTS = [
     last_error TEXT,
     UNIQUE(owner_id, platform)
   )`,
+  // AI Content Studio: one row per generated/edited content idea. Scoped to
+  // the same owner_id session cookie as `connections` (no accounts system).
+  // `creator_id` is the own-account creator (via OAuth) this draft was
+  // grounded on, if any — nullable because generation also works from a
+  // bare topic with no connected account yet. `linked_video_id` lets a
+  // "posted" draft point at the real video that followed it, so the UI can
+  // show planned-vs-actual without inventing a metric of its own.
+  `CREATE TABLE IF NOT EXISTS content_drafts (
+    id TEXT PRIMARY KEY,
+    owner_id TEXT NOT NULL,
+    platform TEXT NOT NULL CHECK (platform IN ('instagram', 'tiktok')),
+    creator_id TEXT REFERENCES creators(id) ON DELETE SET NULL,
+    topic TEXT NOT NULL DEFAULT '',
+    hook TEXT NOT NULL DEFAULT '',
+    script TEXT NOT NULL DEFAULT '',
+    caption TEXT NOT NULL DEFAULT '',
+    hashtags TEXT NOT NULL DEFAULT '[]',
+    status TEXT NOT NULL DEFAULT 'idea' CHECK (status IN ('idea', 'draft', 'scheduled', 'posted', 'archived')),
+    scheduled_at TEXT,
+    linked_video_id TEXT REFERENCES videos(id) ON DELETE SET NULL,
+    ai_model TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+  )`,
   `CREATE INDEX IF NOT EXISTS idx_videos_creator ON videos(creator_id)`,
   `CREATE INDEX IF NOT EXISTS idx_videos_posted_at ON videos(posted_at)`,
   `CREATE INDEX IF NOT EXISTS idx_creators_region ON creators(region)`,
   `CREATE INDEX IF NOT EXISTS idx_creators_search ON creators(search_blob)`,
   `CREATE INDEX IF NOT EXISTS idx_connections_owner ON connections(owner_id)`,
+  `CREATE INDEX IF NOT EXISTS idx_drafts_owner ON content_drafts(owner_id)`,
+  `CREATE INDEX IF NOT EXISTS idx_drafts_status ON content_drafts(status)`,
 ];
 
 // Columns added after the first release — existing local/Turso DBs created
