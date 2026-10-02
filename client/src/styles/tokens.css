@@ -23,6 +23,15 @@
   --color-ig: #ff4fa0;
   --color-tt: #14171a;
 
+  /* Chart categorical series — validated separately from the brand swatches
+     above (those fail the dataviz skill's lightness/contrast gates as thin
+     line-chart marks). First 3 slots pass CVD + normal-vision separation
+     even all-pairs; a 4th creative is still safe pairwise. */
+  --chart-series-1: #2a78d6;
+  --chart-series-2: #eb6834;
+  --chart-series-3: #1baf7a;
+  --chart-series-4: #eda100;
+
   --border-w: 3px;
   --border-w-lg: 4px;
   --radius-sm: 6px;
@@ -61,6 +70,11 @@
   --color-lime: #adff2f;
   --color-lime-ink: #0d0d0d;
 
+  --chart-series-1: #3987e5;
+  --chart-series-2: #d95926;
+  --chart-series-3: #199e70;
+  --chart-series-4: #c98500;
+
   --shadow-sm: 3px 3px 0 var(--color-border);
   --shadow-md: 6px 6px 0 var(--color-border);
   --shadow-lg: 10px 10px 0 var(--color-border);
@@ -78,6 +92,11 @@
 
     --color-accent: #6a8bff;
     --color-accent-ink: #0d0d0d;
+
+    --chart-series-1: #3987e5;
+    --chart-series-2: #d95926;
+    --chart-series-3: #199e70;
+    --chart-series-4: #c98500;
 
     --shadow-sm: 3px 3px 0 var(--color-border);
     --shadow-md: 6px 6px 0 var(--color-border);

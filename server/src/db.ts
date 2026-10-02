@@ -57,99 +57,63 @@ export const db: Client = new Proxy({} as Client, {
   },
 });
 
+// NEIRO Neuromarketing Lab: a marketer creates a `test` with 2+ `creatives`
+// (ad variants), a viewer opens the public /watch link and has their
+// in-browser (never-leaves-device) facial-action-unit signal sampled while
+// looking at each creative in turn, producing `reactions` rows the marketer
+// can aggregate into a real engagement comparison instead of a guess.
 const SCHEMA_STATEMENTS = [
-  `CREATE TABLE IF NOT EXISTS creators (
-    id TEXT PRIMARY KEY,
-    platform TEXT NOT NULL CHECK (platform IN ('instagram', 'tiktok')),
-    username TEXT NOT NULL,
-    display_name TEXT NOT NULL DEFAULT '',
-    avatar_url TEXT,
-    bio TEXT NOT NULL DEFAULT '',
-    followers INTEGER,
-    region TEXT,
-    region_source TEXT NOT NULL DEFAULT 'unset',
-    niche_tags TEXT NOT NULL DEFAULT '[]',
-    search_blob TEXT NOT NULL DEFAULT '',
-    source TEXT NOT NULL DEFAULT 'rapidapi_instagram',
-    verification_status TEXT NOT NULL DEFAULT 'partially_verified',
-    created_at TEXT NOT NULL,
-    last_synced_at TEXT NOT NULL,
-    last_sync_status TEXT NOT NULL DEFAULT 'ok',
-    last_error TEXT,
-    UNIQUE(platform, username)
-  )`,
-  `CREATE TABLE IF NOT EXISTS videos (
-    id TEXT PRIMARY KEY,
-    creator_id TEXT NOT NULL REFERENCES creators(id) ON DELETE CASCADE,
-    external_id TEXT NOT NULL,
-    url TEXT,
-    thumbnail_url TEXT,
-    caption TEXT NOT NULL DEFAULT '',
-    views INTEGER,
-    likes INTEGER,
-    comments INTEGER,
-    posted_at TEXT,
-    fetched_at TEXT NOT NULL,
-    UNIQUE(creator_id, external_id)
-  )`,
-  `CREATE TABLE IF NOT EXISTS connections (
+  `CREATE TABLE IF NOT EXISTS tests (
     id TEXT PRIMARY KEY,
     owner_id TEXT NOT NULL,
-    platform TEXT NOT NULL CHECK (platform IN ('instagram', 'tiktok')),
-    external_account_id TEXT NOT NULL,
-    username TEXT NOT NULL,
-    access_token TEXT NOT NULL,
-    refresh_token TEXT,
-    token_expires_at TEXT,
-    scopes TEXT NOT NULL DEFAULT '[]',
-    connected_at TEXT NOT NULL,
-    last_sync_at TEXT,
-    last_sync_status TEXT NOT NULL DEFAULT 'never_synced',
-    last_error TEXT,
-    UNIQUE(owner_id, platform)
+    title TEXT NOT NULL DEFAULT '',
+    goal TEXT NOT NULL DEFAULT '',
+    status TEXT NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'active', 'closed')),
+    last_analysis_json TEXT,
+    last_analyzed_at TEXT,
+    created_at TEXT NOT NULL
   )`,
-  // AI Content Studio: one row per generated/edited content idea. Scoped to
-  // the same owner_id session cookie as `connections` (no accounts system).
-  // `creator_id` is the own-account creator (via OAuth) this draft was
-  // grounded on, if any — nullable because generation also works from a
-  // bare topic with no connected account yet. `linked_video_id` lets a
-  // "posted" draft point at the real video that followed it, so the UI can
-  // show planned-vs-actual without inventing a metric of its own.
-  `CREATE TABLE IF NOT EXISTS content_drafts (
+  `CREATE TABLE IF NOT EXISTS creatives (
     id TEXT PRIMARY KEY,
-    owner_id TEXT NOT NULL,
-    platform TEXT NOT NULL CHECK (platform IN ('instagram', 'tiktok')),
-    creator_id TEXT REFERENCES creators(id) ON DELETE SET NULL,
-    topic TEXT NOT NULL DEFAULT '',
-    hook TEXT NOT NULL DEFAULT '',
-    script TEXT NOT NULL DEFAULT '',
+    test_id TEXT NOT NULL REFERENCES tests(id) ON DELETE CASCADE,
+    label TEXT NOT NULL DEFAULT '',
+    image_url TEXT NOT NULL,
     caption TEXT NOT NULL DEFAULT '',
-    hashtags TEXT NOT NULL DEFAULT '[]',
-    status TEXT NOT NULL DEFAULT 'idea' CHECK (status IN ('idea', 'draft', 'scheduled', 'posted', 'archived')),
-    scheduled_at TEXT,
-    linked_video_id TEXT REFERENCES videos(id) ON DELETE SET NULL,
-    ai_model TEXT,
-    created_at TEXT NOT NULL,
-    updated_at TEXT NOT NULL
+    display_order INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL
   )`,
-  `CREATE INDEX IF NOT EXISTS idx_videos_creator ON videos(creator_id)`,
-  `CREATE INDEX IF NOT EXISTS idx_videos_posted_at ON videos(posted_at)`,
-  `CREATE INDEX IF NOT EXISTS idx_creators_region ON creators(region)`,
-  `CREATE INDEX IF NOT EXISTS idx_creators_search ON creators(search_blob)`,
-  `CREATE INDEX IF NOT EXISTS idx_connections_owner ON connections(owner_id)`,
-  `CREATE INDEX IF NOT EXISTS idx_drafts_owner ON content_drafts(owner_id)`,
-  `CREATE INDEX IF NOT EXISTS idx_drafts_status ON content_drafts(status)`,
-];
-
-// Columns added after the first release — existing local/Turso DBs created
-// before this change won't have them. SQLite has no "ADD COLUMN IF NOT
-// EXISTS", so this just tries each and swallows the "duplicate column"
-// error on a DB that already has it.
-const MIGRATION_STATEMENTS = [
-  `ALTER TABLE creators ADD COLUMN source TEXT NOT NULL DEFAULT 'rapidapi_instagram'`,
-  `ALTER TABLE creators ADD COLUMN verification_status TEXT NOT NULL DEFAULT 'partially_verified'`,
-  `ALTER TABLE creators ADD COLUMN last_sync_status TEXT NOT NULL DEFAULT 'ok'`,
-  `ALTER TABLE creators ADD COLUMN last_error TEXT`,
+  // One row per real person's single pass through a test's creatives. No
+  // login — a viewer needs no account, just an anonymous id the client
+  // generates so its own batched reaction POSTs group together.
+  `CREATE TABLE IF NOT EXISTS viewer_sessions (
+    id TEXT PRIMARY KEY,
+    test_id TEXT NOT NULL REFERENCES tests(id) ON DELETE CASCADE,
+    started_at TEXT NOT NULL,
+    completed_at TEXT,
+    user_agent TEXT NOT NULL DEFAULT ''
+  )`,
+  // Time-bucketed (not per-frame) samples of facial-action-unit-derived
+  // scores, 0..1, captured client-side from MediaPipe FaceLandmarker
+  // blendshapes — never raw video/images, which never leave the viewer's
+  // device. `smile`/`brow_furrow`/`surprise` are FACS-grounded engagement
+  // proxies (not a clinical "emotion reading"); `attention` is a
+  // face-detected-and-eyes-open proxy, not a gaze tracker.
+  `CREATE TABLE IF NOT EXISTS reactions (
+    id TEXT PRIMARY KEY,
+    viewer_session_id TEXT NOT NULL REFERENCES viewer_sessions(id) ON DELETE CASCADE,
+    creative_id TEXT NOT NULL REFERENCES creatives(id) ON DELETE CASCADE,
+    t_ms INTEGER NOT NULL,
+    smile REAL,
+    brow_furrow REAL,
+    surprise REAL,
+    attention REAL,
+    created_at TEXT NOT NULL
+  )`,
+  `CREATE INDEX IF NOT EXISTS idx_tests_owner ON tests(owner_id)`,
+  `CREATE INDEX IF NOT EXISTS idx_creatives_test ON creatives(test_id)`,
+  `CREATE INDEX IF NOT EXISTS idx_viewer_sessions_test ON viewer_sessions(test_id)`,
+  `CREATE INDEX IF NOT EXISTS idx_reactions_session ON reactions(viewer_session_id)`,
+  `CREATE INDEX IF NOT EXISTS idx_reactions_creative ON reactions(creative_id)`,
 ];
 
 let migrated: Promise<void> | null = null;
@@ -160,13 +124,6 @@ export function ensureSchema(): Promise<void> {
     migrated = (async () => {
       for (const stmt of SCHEMA_STATEMENTS) {
         await db.execute(stmt);
-      }
-      for (const stmt of MIGRATION_STATEMENTS) {
-        try {
-          await db.execute(stmt);
-        } catch (err) {
-          if (!(err instanceof Error) || !/duplicate column/i.test(err.message)) throw err;
-        }
       }
     })();
   }

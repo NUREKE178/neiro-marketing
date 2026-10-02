@@ -1,506 +1,273 @@
 import { randomUUID } from "node:crypto";
 import { db, ensureSchema } from "./db.js";
-import { DataSource, NormalizedProfile, VerificationStatus, verificationStatusForSource } from "./providers/types.js";
-import { buildSearchBlob, deriveNicheTags } from "./niche.js";
-import { inferRegionFromText } from "./regions.js";
 
-export interface CreatorRecord {
-  id: string;
-  platform: "instagram" | "tiktok";
-  username: string;
-  display_name: string;
-  avatar_url: string | null;
-  bio: string;
-  /** null = provider didn't report a follower count, never coerced to 0. */
-  followers: number | null;
-  region: string | null;
-  region_source: "unset" | "inferred" | "manual";
-  niche_tags: string;
-  source: DataSource;
-  verification_status: VerificationStatus;
-  created_at: string;
-  last_synced_at: string;
-  last_sync_status: "ok" | "failed";
-  last_error: string | null;
-}
-
-export interface VideoRecord {
-  id: string;
-  creator_id: string;
-  external_id: string;
-  url: string | null;
-  thumbnail_url: string | null;
-  caption: string;
-  views: number | null;
-  likes: number | null;
-  comments: number | null;
-  posted_at: string | null;
-  fetched_at: string;
-}
-
-/** Upserts a freshly-fetched provider profile (+videos) into the DB. */
-export async function upsertCreatorFromProfile(profile: NormalizedProfile): Promise<CreatorRecord> {
-  await ensureSchema();
-  const now = new Date().toISOString();
-
-  const existing = await getCreator(profile.platform, profile.username);
-
-  const nicheTags = deriveNicheTags(profile.videos.map((v) => v.caption));
-  const inferredCity = existing?.region_source === "manual" ? null : inferRegionFromText(profile.bio);
-
-  const id = existing?.id ?? randomUUID();
-  const region = existing?.region_source === "manual" ? existing.region : (inferredCity?.name ?? existing?.region ?? null);
-  const regionSource: CreatorRecord["region_source"] =
-    existing?.region_source === "manual" ? "manual" : inferredCity ? "inferred" : "unset";
-  const searchBlob = buildSearchBlob({
-    username: profile.username,
-    displayName: profile.displayName,
-    bio: profile.bio,
-    nicheTags,
-    captions: profile.videos.map((v) => v.caption),
-  });
-  const verificationStatus = verificationStatusForSource(profile.source);
-
-  await db.execute({
-    sql: `INSERT INTO creators (id, platform, username, display_name, avatar_url, bio, followers, region, region_source, niche_tags, search_blob, source, verification_status, created_at, last_synced_at, last_sync_status, last_error)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'ok', NULL)
-          ON CONFLICT(platform, username) DO UPDATE SET
-            display_name = excluded.display_name,
-            avatar_url = excluded.avatar_url,
-            bio = excluded.bio,
-            followers = excluded.followers,
-            region = excluded.region,
-            region_source = excluded.region_source,
-            niche_tags = excluded.niche_tags,
-            search_blob = excluded.search_blob,
-            source = excluded.source,
-            verification_status = excluded.verification_status,
-            last_synced_at = excluded.last_synced_at,
-            last_sync_status = 'ok',
-            last_error = NULL`,
-    args: [
-      id,
-      profile.platform,
-      profile.username,
-      profile.displayName,
-      profile.avatarUrl,
-      profile.bio,
-      profile.followers,
-      region,
-      regionSource,
-      JSON.stringify(nicheTags),
-      searchBlob,
-      profile.source,
-      verificationStatus,
-      existing?.created_at ?? now,
-      now,
-    ],
-  });
-
-  const statements = profile.videos.map((v) => ({
-    sql: `INSERT INTO videos (id, creator_id, external_id, url, thumbnail_url, caption, views, likes, comments, posted_at, fetched_at)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-          ON CONFLICT(creator_id, external_id) DO UPDATE SET
-            url = excluded.url,
-            thumbnail_url = excluded.thumbnail_url,
-            caption = excluded.caption,
-            views = excluded.views,
-            likes = excluded.likes,
-            comments = excluded.comments,
-            posted_at = excluded.posted_at,
-            fetched_at = excluded.fetched_at`,
-    args: [
-      randomUUID(),
-      id,
-      v.externalId,
-      v.url,
-      v.thumbnailUrl,
-      v.caption,
-      v.views,
-      v.likes,
-      v.comments,
-      v.postedAt,
-      now,
-    ],
-  }));
-
-  if (statements.length > 0) {
-    await db.batch(statements, "write");
-  }
-
-  return (await getCreatorById(id))!;
-}
-
-/**
- * Records that a resync attempt failed, WITHOUT touching the creator's
- * existing (still-displayable) data — so the UI can show "last synced 3
- * days ago, last attempt failed" instead of either silently serving stale
- * data as fresh, or wiping it because of a transient failure.
- */
-export async function recordSyncFailure(
-  platform: string,
-  username: string,
-  errorMessage: string,
-): Promise<void> {
-  await ensureSchema();
-  await db.execute({
-    sql: `UPDATE creators SET last_sync_status = 'failed', last_error = ? WHERE platform = ? AND username = ?`,
-    args: [errorMessage.slice(0, 500), platform, username],
-  });
-}
-
-export async function getCreator(platform: string, username: string): Promise<CreatorRecord | undefined> {
-  await ensureSchema();
-  const rs = await db.execute({
-    sql: `SELECT * FROM creators WHERE platform = ? AND username = ?`,
-    args: [platform, username],
-  });
-  return rs.rows[0] as unknown as CreatorRecord | undefined;
-}
-
-async function getCreatorById(id: string): Promise<CreatorRecord | undefined> {
-  const rs = await db.execute({ sql: `SELECT * FROM creators WHERE id = ?`, args: [id] });
-  return rs.rows[0] as unknown as CreatorRecord | undefined;
-}
-
-export async function getVideosForCreator(creatorId: string): Promise<VideoRecord[]> {
-  await ensureSchema();
-  const rs = await db.execute({
-    sql: `SELECT * FROM videos WHERE creator_id = ? ORDER BY views DESC`,
-    args: [creatorId],
-  });
-  return rs.rows as unknown as VideoRecord[];
-}
-
-export async function setCreatorRegion(creatorId: string, region: string): Promise<CreatorRecord | undefined> {
-  await ensureSchema();
-  await db.execute({
-    sql: `UPDATE creators SET region = ?, region_source = 'manual' WHERE id = ?`,
-    args: [region, creatorId],
-  });
-  return getCreatorById(creatorId);
-}
-
-export interface SearchParams {
-  keyword?: string;
-  region?: string;
-  platform?: string;
-}
-
-export async function searchCreators(
-  params: SearchParams,
-): Promise<(CreatorRecord & { total_views: number; total_likes: number })[]> {
-  await ensureSchema();
-  const clauses: string[] = [];
-  const args: (string | number)[] = [];
-
-  if (params.keyword) {
-    clauses.push(`c.search_blob LIKE ?`);
-    args.push(`%${params.keyword.trim().toLocaleLowerCase("ru")}%`);
-  }
-  if (params.region) {
-    clauses.push(`c.region = ?`);
-    args.push(params.region);
-  }
-  if (params.platform) {
-    clauses.push(`c.platform = ?`);
-    args.push(params.platform);
-  }
-
-  const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
-
-  const rs = await db.execute({
-    sql: `SELECT c.*, COALESCE(SUM(v.views), 0) AS total_views, COALESCE(SUM(v.likes), 0) AS total_likes
-          FROM creators c
-          LEFT JOIN videos v ON v.creator_id = c.id
-          ${where}
-          GROUP BY c.id
-          ORDER BY total_views DESC`,
-    args,
-  });
-  return rs.rows as unknown as (CreatorRecord & { total_views: number; total_likes: number })[];
-}
-
-export interface LeaderboardParams {
-  platform?: string;
-  region?: string;
-  metric: "views" | "likes";
-  fromIso: string;
-  toIso: string;
-  limit?: number;
-}
-
-export async function leaderboard(params: LeaderboardParams) {
-  await ensureSchema();
-  const clauses: string[] = ["v.posted_at IS NOT NULL", "v.posted_at BETWEEN ? AND ?"];
-  const args: (string | number)[] = [params.fromIso, params.toIso];
-
-  if (params.platform) {
-    clauses.push(`c.platform = ?`);
-    args.push(params.platform);
-  }
-  if (params.region) {
-    clauses.push(`c.region = ?`);
-    args.push(params.region);
-  }
-
-  const orderCol = params.metric === "likes" ? "period_likes" : "period_views";
-  args.push(params.limit ?? 5);
-
-  const rs = await db.execute({
-    sql: `SELECT c.*,
-                 COALESCE(SUM(v.views), 0) AS period_views,
-                 COALESCE(SUM(v.likes), 0) AS period_likes,
-                 COALESCE(SUM(v.comments), 0) AS period_comments,
-                 COUNT(v.id) AS period_video_count
-          FROM creators c
-          JOIN videos v ON v.creator_id = c.id
-          WHERE ${clauses.join(" AND ")}
-          GROUP BY c.id
-          ORDER BY ${orderCol} DESC
-          LIMIT ?`,
-    args,
-  });
-  return rs.rows;
-}
-
-export interface ConnectionRecord {
+export interface TestRecord {
   id: string;
   owner_id: string;
-  platform: "instagram" | "tiktok";
-  external_account_id: string;
-  username: string;
-  access_token: string;
-  refresh_token: string | null;
-  token_expires_at: string | null;
-  scopes: string;
-  connected_at: string;
-  last_sync_at: string | null;
-  last_sync_status: "never_synced" | "ok" | "failed";
-  last_error: string | null;
-}
-
-export interface SaveConnectionInput {
-  ownerId: string;
-  platform: "instagram" | "tiktok";
-  externalAccountId: string;
-  username: string;
-  accessToken: string;
-  refreshToken: string | null;
-  tokenExpiresAt: string | null;
-  scopes: string[];
-}
-
-export async function saveConnection(input: SaveConnectionInput): Promise<ConnectionRecord> {
-  await ensureSchema();
-  const now = new Date().toISOString();
-  const existing = await getConnection(input.ownerId, input.platform);
-  const id = existing?.id ?? randomUUID();
-
-  await db.execute({
-    sql: `INSERT INTO connections (id, owner_id, platform, external_account_id, username, access_token, refresh_token, token_expires_at, scopes, connected_at, last_sync_at, last_sync_status, last_error)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, 'never_synced', NULL)
-          ON CONFLICT(owner_id, platform) DO UPDATE SET
-            external_account_id = excluded.external_account_id,
-            username = excluded.username,
-            access_token = excluded.access_token,
-            refresh_token = excluded.refresh_token,
-            token_expires_at = excluded.token_expires_at,
-            scopes = excluded.scopes,
-            connected_at = excluded.connected_at,
-            last_sync_status = 'never_synced',
-            last_error = NULL`,
-    args: [
-      id,
-      input.ownerId,
-      input.platform,
-      input.externalAccountId,
-      input.username,
-      input.accessToken,
-      input.refreshToken,
-      input.tokenExpiresAt,
-      JSON.stringify(input.scopes),
-      now,
-    ],
-  });
-
-  return (await getConnection(input.ownerId, input.platform))!;
-}
-
-export async function getConnection(
-  ownerId: string,
-  platform: string,
-): Promise<ConnectionRecord | undefined> {
-  await ensureSchema();
-  const rs = await db.execute({
-    sql: `SELECT * FROM connections WHERE owner_id = ? AND platform = ?`,
-    args: [ownerId, platform],
-  });
-  return rs.rows[0] as unknown as ConnectionRecord | undefined;
-}
-
-export async function deleteConnection(ownerId: string, platform: string): Promise<void> {
-  await ensureSchema();
-  await db.execute({
-    sql: `DELETE FROM connections WHERE owner_id = ? AND platform = ?`,
-    args: [ownerId, platform],
-  });
-}
-
-export async function recordConnectionSync(
-  ownerId: string,
-  platform: string,
-  status: "ok" | "failed",
-  error: string | null,
-): Promise<void> {
-  await ensureSchema();
-  await db.execute({
-    sql: `UPDATE connections SET last_sync_at = ?, last_sync_status = ?, last_error = ? WHERE owner_id = ? AND platform = ?`,
-    args: [new Date().toISOString(), status, error?.slice(0, 500) ?? null, ownerId, platform],
-  });
-}
-
-export interface ContentDraftRecord {
-  id: string;
-  owner_id: string;
-  platform: "instagram" | "tiktok";
-  creator_id: string | null;
-  topic: string;
-  hook: string;
-  script: string;
-  caption: string;
-  hashtags: string;
-  status: "idea" | "draft" | "scheduled" | "posted" | "archived";
-  scheduled_at: string | null;
-  linked_video_id: string | null;
-  ai_model: string | null;
+  title: string;
+  goal: string;
+  status: "draft" | "active" | "closed";
+  last_analysis_json: string | null;
+  last_analyzed_at: string | null;
   created_at: string;
-  updated_at: string;
 }
 
-export interface CreateDraftInput {
-  ownerId: string;
-  platform: "instagram" | "tiktok";
-  creatorId: string | null;
-  topic: string;
-  hook: string;
-  script: string;
+export interface CreativeRecord {
+  id: string;
+  test_id: string;
+  label: string;
+  image_url: string;
   caption: string;
-  hashtags: string[];
-  aiModel: string | null;
-  status?: ContentDraftRecord["status"];
+  display_order: number;
+  created_at: string;
 }
 
-export async function createDraft(input: CreateDraftInput): Promise<ContentDraftRecord> {
+export interface ViewerSessionRecord {
+  id: string;
+  test_id: string;
+  started_at: string;
+  completed_at: string | null;
+  user_agent: string;
+}
+
+// --- tests ---------------------------------------------------------------
+
+export async function createTest(ownerId: string, title: string, goal: string): Promise<TestRecord> {
   await ensureSchema();
   const id = randomUUID();
   const now = new Date().toISOString();
   await db.execute({
-    sql: `INSERT INTO content_drafts (id, owner_id, platform, creator_id, topic, hook, script, caption, hashtags, status, scheduled_at, linked_video_id, ai_model, created_at, updated_at)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL, ?, ?, ?)`,
-    args: [
-      id,
-      input.ownerId,
-      input.platform,
-      input.creatorId,
-      input.topic,
-      input.hook,
-      input.script,
-      input.caption,
-      JSON.stringify(input.hashtags),
-      input.status ?? "idea",
-      input.aiModel,
-      now,
-      now,
-    ],
+    sql: `INSERT INTO tests (id, owner_id, title, goal, status, created_at) VALUES (?, ?, ?, ?, 'draft', ?)`,
+    args: [id, ownerId, title, goal, now],
   });
-  return (await getDraft(id, input.ownerId))!;
+  return (await getTest(id))!;
 }
 
-export async function listDrafts(ownerId: string): Promise<ContentDraftRecord[]> {
+export async function listTestsForOwner(ownerId: string): Promise<TestRecord[]> {
   await ensureSchema();
   const rs = await db.execute({
-    sql: `SELECT * FROM content_drafts WHERE owner_id = ? ORDER BY updated_at DESC`,
+    sql: `SELECT * FROM tests WHERE owner_id = ? ORDER BY created_at DESC`,
     args: [ownerId],
   });
-  return rs.rows as unknown as ContentDraftRecord[];
+  return rs.rows as unknown as TestRecord[];
 }
 
-export async function getDraft(id: string, ownerId: string): Promise<ContentDraftRecord | undefined> {
+export async function getTest(id: string): Promise<TestRecord | undefined> {
   await ensureSchema();
-  const rs = await db.execute({
-    sql: `SELECT * FROM content_drafts WHERE id = ? AND owner_id = ?`,
-    args: [id, ownerId],
-  });
-  return rs.rows[0] as unknown as ContentDraftRecord | undefined;
+  const rs = await db.execute({ sql: `SELECT * FROM tests WHERE id = ?`, args: [id] });
+  return rs.rows[0] as unknown as TestRecord | undefined;
 }
 
-export interface UpdateDraftInput {
-  topic?: string;
-  hook?: string;
-  script?: string;
-  caption?: string;
-  hashtags?: string[];
-  status?: ContentDraftRecord["status"];
-  scheduledAt?: string | null;
-  linkedVideoId?: string | null;
+export interface UpdateTestInput {
+  title?: string;
+  goal?: string;
+  status?: TestRecord["status"];
 }
 
-const DRAFT_FIELD_MAP: Record<keyof UpdateDraftInput, string> = {
-  topic: "topic",
-  hook: "hook",
-  script: "script",
-  caption: "caption",
-  hashtags: "hashtags",
-  status: "status",
-  scheduledAt: "scheduled_at",
-  linkedVideoId: "linked_video_id",
-};
-
-export async function updateDraft(
+export async function updateTest(
   id: string,
   ownerId: string,
-  patch: UpdateDraftInput,
-): Promise<ContentDraftRecord | undefined> {
+  patch: UpdateTestInput,
+): Promise<TestRecord | undefined> {
   await ensureSchema();
   const sets: string[] = [];
-  const args: (string | null)[] = [];
-
-  for (const [key, column] of Object.entries(DRAFT_FIELD_MAP) as [keyof UpdateDraftInput, string][]) {
-    // `undefined` means "the caller didn't send this field" (skip it) —
-    // distinct from an explicit `null`, which is a real value (e.g.
-    // unlinking a video). Using `key in patch` here instead would treat an
-    // omitted field the same as `undefined`-valued one and overwrite NOT
-    // NULL columns like `topic` with NULL on a partial PATCH.
-    const value = patch[key];
-    if (value === undefined) continue;
-    sets.push(`${column} = ?`);
-    args.push(key === "hashtags" ? JSON.stringify(value ?? []) : (value as string | null) ?? null);
+  const args: string[] = [];
+  if (patch.title !== undefined) {
+    sets.push("title = ?");
+    args.push(patch.title);
   }
-  if (sets.length === 0) return getDraft(id, ownerId);
-
-  sets.push("updated_at = ?");
-  args.push(new Date().toISOString());
+  if (patch.goal !== undefined) {
+    sets.push("goal = ?");
+    args.push(patch.goal);
+  }
+  if (patch.status !== undefined) {
+    sets.push("status = ?");
+    args.push(patch.status);
+  }
+  if (sets.length === 0) return getTest(id);
 
   await db.execute({
-    sql: `UPDATE content_drafts SET ${sets.join(", ")} WHERE id = ? AND owner_id = ?`,
+    sql: `UPDATE tests SET ${sets.join(", ")} WHERE id = ? AND owner_id = ?`,
     args: [...args, id, ownerId],
   });
-  return getDraft(id, ownerId);
+  return getTest(id);
 }
 
-export async function deleteDraft(id: string, ownerId: string): Promise<void> {
+export async function deleteTest(id: string, ownerId: string): Promise<void> {
+  await ensureSchema();
+  await db.execute({ sql: `DELETE FROM tests WHERE id = ? AND owner_id = ?`, args: [id, ownerId] });
+}
+
+/** Caches the AI verdict on the test row so results don't re-call the AI provider on every page view. */
+export async function saveTestAnalysis(id: string, analysisJson: string): Promise<void> {
   await ensureSchema();
   await db.execute({
-    sql: `DELETE FROM content_drafts WHERE id = ? AND owner_id = ?`,
-    args: [id, ownerId],
+    sql: `UPDATE tests SET last_analysis_json = ?, last_analyzed_at = ? WHERE id = ?`,
+    args: [analysisJson, new Date().toISOString(), id],
   });
 }
 
-export async function distinctRegions(): Promise<string[]> {
+// --- creatives -------------------------------------------------------------
+
+export async function addCreative(
+  testId: string,
+  label: string,
+  imageUrl: string,
+  caption: string,
+): Promise<CreativeRecord> {
   await ensureSchema();
-  const rs = await db.execute(
-    `SELECT DISTINCT region FROM creators WHERE region IS NOT NULL ORDER BY region`,
-  );
-  return (rs.rows as unknown as { region: string }[]).map((r) => r.region);
+  const id = randomUUID();
+  const now = new Date().toISOString();
+  const countRs = await db.execute({
+    sql: `SELECT COUNT(*) as c FROM creatives WHERE test_id = ?`,
+    args: [testId],
+  });
+  const order = Number((countRs.rows[0] as unknown as { c: number }).c);
+  await db.execute({
+    sql: `INSERT INTO creatives (id, test_id, label, image_url, caption, display_order, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    args: [id, testId, label, imageUrl, caption, order, now],
+  });
+  return (await getCreative(id))!;
+}
+
+export async function getCreative(id: string): Promise<CreativeRecord | undefined> {
+  await ensureSchema();
+  const rs = await db.execute({ sql: `SELECT * FROM creatives WHERE id = ?`, args: [id] });
+  return rs.rows[0] as unknown as CreativeRecord | undefined;
+}
+
+export async function listCreativesForTest(testId: string): Promise<CreativeRecord[]> {
+  await ensureSchema();
+  const rs = await db.execute({
+    sql: `SELECT * FROM creatives WHERE test_id = ? ORDER BY display_order ASC`,
+    args: [testId],
+  });
+  return rs.rows as unknown as CreativeRecord[];
+}
+
+export async function deleteCreative(id: string, testId: string): Promise<void> {
+  await ensureSchema();
+  await db.execute({ sql: `DELETE FROM creatives WHERE id = ? AND test_id = ?`, args: [id, testId] });
+}
+
+// --- viewer sessions ---------------------------------------------------------
+
+export async function createViewerSession(testId: string, userAgent: string): Promise<ViewerSessionRecord> {
+  await ensureSchema();
+  const id = randomUUID();
+  const now = new Date().toISOString();
+  await db.execute({
+    sql: `INSERT INTO viewer_sessions (id, test_id, started_at, completed_at, user_agent) VALUES (?, ?, ?, NULL, ?)`,
+    args: [id, testId, now, userAgent.slice(0, 300)],
+  });
+  return (await getViewerSession(id))!;
+}
+
+export async function getViewerSession(id: string): Promise<ViewerSessionRecord | undefined> {
+  await ensureSchema();
+  const rs = await db.execute({ sql: `SELECT * FROM viewer_sessions WHERE id = ?`, args: [id] });
+  return rs.rows[0] as unknown as ViewerSessionRecord | undefined;
+}
+
+export async function completeViewerSession(id: string): Promise<void> {
+  await ensureSchema();
+  await db.execute({
+    sql: `UPDATE viewer_sessions SET completed_at = ? WHERE id = ?`,
+    args: [new Date().toISOString(), id],
+  });
+}
+
+export async function countCompletedSessions(testId: string): Promise<number> {
+  await ensureSchema();
+  const rs = await db.execute({
+    sql: `SELECT COUNT(*) as c FROM viewer_sessions WHERE test_id = ? AND completed_at IS NOT NULL`,
+    args: [testId],
+  });
+  return Number((rs.rows[0] as unknown as { c: number }).c);
+}
+
+// --- reactions ---------------------------------------------------------------
+
+export interface ReactionSampleInput {
+  tMs: number;
+  smile: number | null;
+  browFurrow: number | null;
+  surprise: number | null;
+  attention: number | null;
+}
+
+/** Batched insert — the client buffers samples client-side and POSTs once per creative, never per-frame. */
+export async function addReactionSamples(
+  viewerSessionId: string,
+  creativeId: string,
+  samples: ReactionSampleInput[],
+): Promise<void> {
+  if (samples.length === 0) return;
+  await ensureSchema();
+  const now = new Date().toISOString();
+  const statements = samples.map((s) => ({
+    sql: `INSERT INTO reactions (id, viewer_session_id, creative_id, t_ms, smile, brow_furrow, surprise, attention, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    args: [randomUUID(), viewerSessionId, creativeId, s.tMs, s.smile, s.browFurrow, s.surprise, s.attention, now],
+  }));
+  await db.batch(statements, "write");
+}
+
+export interface CreativeAggregate {
+  creative_id: string;
+  session_count: number;
+  sample_count: number;
+  avg_smile: number | null;
+  avg_brow_furrow: number | null;
+  avg_surprise: number | null;
+  avg_attention: number | null;
+}
+
+/** One row per creative (even one with zero reactions yet) — never drops a creative just because nobody's reacted to it. */
+export async function aggregateReactionsForTest(testId: string): Promise<CreativeAggregate[]> {
+  await ensureSchema();
+  const rs = await db.execute({
+    sql: `SELECT
+            c.id as creative_id,
+            COUNT(DISTINCT r.viewer_session_id) as session_count,
+            COUNT(r.id) as sample_count,
+            AVG(r.smile) as avg_smile,
+            AVG(r.brow_furrow) as avg_brow_furrow,
+            AVG(r.surprise) as avg_surprise,
+            AVG(r.attention) as avg_attention
+          FROM creatives c
+          LEFT JOIN reactions r ON r.creative_id = c.id
+          WHERE c.test_id = ?
+          GROUP BY c.id
+          ORDER BY c.display_order ASC`,
+    args: [testId],
+  });
+  return rs.rows as unknown as CreativeAggregate[];
+}
+
+export interface TimeBucket {
+  creative_id: string;
+  bucket_ms: number;
+  avg_smile: number | null;
+  avg_brow_furrow: number | null;
+  avg_attention: number | null;
+}
+
+/** Buckets reactions into fixed-width time windows (default 1s) for an "engagement over time" curve per creative. */
+export async function timeBucketedReactions(testId: string, bucketMs = 1000): Promise<TimeBucket[]> {
+  await ensureSchema();
+  const rs = await db.execute({
+    sql: `SELECT
+            r.creative_id as creative_id,
+            CAST(r.t_ms / ? AS INTEGER) * ? as bucket_ms,
+            AVG(r.smile) as avg_smile,
+            AVG(r.brow_furrow) as avg_brow_furrow,
+            AVG(r.attention) as avg_attention
+          FROM reactions r
+          JOIN creatives c ON c.id = r.creative_id
+          WHERE c.test_id = ?
+          GROUP BY r.creative_id, bucket_ms
+          ORDER BY r.creative_id ASC, bucket_ms ASC`,
+    args: [bucketMs, bucketMs, testId],
+  });
+  return rs.rows as unknown as TimeBucket[];
 }

@@ -4,13 +4,7 @@ import { LanguageToggle } from "./LanguageToggle";
 import { ThemeToggle } from "./ThemeToggle";
 import styles from "./NavBar.module.css";
 
-const links: { to: string; key: string; end?: boolean }[] = [
-  { to: "/", key: "nav.home", end: true },
-  { to: "/discover", key: "nav.discover" },
-  { to: "/leaderboard", key: "nav.leaderboard" },
-  { to: "/studio", key: "nav.studio" },
-  { to: "/settings", key: "nav.settings" },
-];
+const links: { to: string; key: string; end?: boolean }[] = [{ to: "/", key: "nav.home", end: true }];
 
 export function NavBar() {
   const { t } = useLanguage();

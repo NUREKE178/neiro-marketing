@@ -1,26 +1,30 @@
-import { Route, Routes } from "react-router-dom";
+import { Route, Routes, useLocation } from "react-router-dom";
 import { NavBar } from "./components/NavBar";
 import { Footer } from "./components/Footer";
 import { HomePage } from "./pages/Home/HomePage";
-import { DiscoverPage } from "./pages/Discover/DiscoverPage";
-import { AnalyzePage } from "./pages/Analyze/AnalyzePage";
-import { LeaderboardPage } from "./pages/Leaderboard/LeaderboardPage";
-import { StudioPage } from "./pages/Studio/StudioPage";
-import { SettingsPage } from "./pages/Settings/SettingsPage";
+import { TestDetailPage } from "./pages/TestDetail/TestDetailPage";
+import { WatchPage } from "./pages/Watch/WatchPage";
 import { NotFoundPage } from "./pages/NotFound/NotFoundPage";
 
 export default function App() {
+  const location = useLocation();
+  const isWatchPage = location.pathname.startsWith("/watch/");
+
+  if (isWatchPage) {
+    return (
+      <Routes>
+        <Route path="/watch/:id" element={<WatchPage />} />
+      </Routes>
+    );
+  }
+
   return (
     <>
       <NavBar />
       <main style={{ flex: 1 }}>
         <Routes>
           <Route path="/" element={<HomePage />} />
-          <Route path="/discover" element={<DiscoverPage />} />
-          <Route path="/analyze/:platform/:username" element={<AnalyzePage />} />
-          <Route path="/leaderboard" element={<LeaderboardPage />} />
-          <Route path="/studio" element={<StudioPage />} />
-          <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/tests/:id" element={<TestDetailPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </main>

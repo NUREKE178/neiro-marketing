@@ -1,70 +1,63 @@
-export type Platform = "instagram" | "tiktok";
-
-export interface City {
+export interface Test {
   id: string;
-  name: string;
-  lat: number;
-  lng: number;
-}
-
-export type DataSource = "rapidapi_instagram" | "rapidapi_tiktok" | "oauth_instagram" | "oauth_tiktok";
-export type VerificationStatus = "verified" | "partially_verified";
-
-export interface Creator {
-  id: string;
-  platform: Platform;
-  username: string;
-  display_name: string;
-  avatar_url: string | null;
-  bio: string;
-  /** null = the data source never reported a follower count — not the same as 0. */
-  followers: number | null;
-  region: string | null;
-  region_source: "unset" | "inferred" | "manual";
-  niche_tags: string;
-  source: DataSource;
-  verification_status: VerificationStatus;
+  owner_id: string;
+  title: string;
+  goal: string;
+  status: "draft" | "active" | "closed";
+  last_analysis_json: string | null;
+  last_analyzed_at: string | null;
   created_at: string;
-  last_synced_at: string;
-  last_sync_status: "ok" | "failed";
-  last_error: string | null;
 }
 
-export interface Video {
+export interface Creative {
   id: string;
-  creator_id: string;
-  external_id: string;
-  url: string | null;
-  thumbnail_url: string | null;
+  test_id: string;
+  label: string;
+  image_url: string;
   caption: string;
-  /** null = not reported by the data source, distinct from a real 0. */
-  views: number | null;
-  likes: number | null;
-  comments: number | null;
-  posted_at: string | null;
-  fetched_at: string;
+  display_order: number;
+  created_at: string;
 }
 
-export interface AccountStats {
-  totalViews: number | null;
-  totalLikes: number | null;
-  totalComments: number | null;
-  avgViews: number | null;
-  engagementRate: string | null;
-  videoCount: number;
-  videosWithViews: number;
+export interface ViewerSession {
+  id: string;
+  test_id: string;
+  started_at: string;
+  completed_at: string | null;
+  user_agent: string;
 }
 
-export interface SearchResult extends Creator {
-  total_views: number;
-  total_likes: number;
+export interface ReactionSample {
+  tMs: number;
+  smile: number | null;
+  browFurrow: number | null;
+  surprise: number | null;
+  attention: number | null;
 }
 
-export interface LeaderboardEntry extends Creator {
-  period_views: number;
-  period_likes: number;
-  period_comments: number;
-  period_video_count: number;
+export interface CreativeAggregate {
+  creative_id: string;
+  session_count: number;
+  sample_count: number;
+  avg_smile: number | null;
+  avg_brow_furrow: number | null;
+  avg_surprise: number | null;
+  avg_attention: number | null;
+}
+
+export interface TimeBucket {
+  creative_id: string;
+  bucket_ms: number;
+  avg_smile: number | null;
+  avg_brow_furrow: number | null;
+  avg_attention: number | null;
+}
+
+export interface NeuroVerdict {
+  winnerLabel: string | null;
+  summary: string;
+  perCreativeNotes: { label: string; note: string }[];
+  suggestion: string;
 }
 
 class ApiError extends Error {
@@ -103,160 +96,42 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return body as T;
 }
 
-export type DraftStatus = "idea" | "draft" | "scheduled" | "posted" | "archived";
-
-export interface ContentIdea {
-  hook: string;
-  script: string;
-  caption: string;
-  hashtags: string[];
-}
-
-export interface Draft {
-  id: string;
-  owner_id: string;
-  platform: Platform;
-  creator_id: string | null;
-  topic: string;
-  hook: string;
-  script: string;
-  caption: string;
-  hashtags: string[];
-  status: DraftStatus;
-  scheduled_at: string | null;
-  linked_video_id: string | null;
-  ai_model: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface ConnectionStatus {
-  configured: boolean;
-  connected?: boolean;
-  username?: string;
-  scopes?: string[];
-  connectedAt?: string;
-  lastSyncAt?: string | null;
-  lastSyncStatus?: "never_synced" | "ok" | "failed";
-  lastError?: string | null;
-  tokenExpired?: boolean;
-  reason?: string;
-}
-
 export const api = {
-  configStatus: () =>
-    request<{
-      instagramConfigured: boolean;
-      tiktokConfigured: boolean;
-      instagramOAuthConfigured: boolean;
-      tiktokOAuthConfigured: boolean;
-      aiConfigured: boolean;
-    }>("/config/status"),
+  configStatus: () => request<{ aiConfigured: boolean }>("/config/status"),
 
-  regions: () => request<{ cities: City[]; usedRegions: string[] }>("/regions"),
+  tests: {
+    create: (title: string, goal: string) =>
+      request<{ test: Test }>("/tests", { method: "POST", body: JSON.stringify({ title, goal }) }),
+    list: () => request<{ tests: Test[] }>("/tests"),
+    get: (id: string) => request<{ test: Test; creatives: Creative[] }>(`/tests/${id}`),
+    update: (id: string, patch: Partial<{ title: string; goal: string; status: Test["status"] }>) =>
+      request<{ test: Test }>(`/tests/${id}`, { method: "PATCH", body: JSON.stringify(patch) }),
+    remove: (id: string) => request<{ ok: true }>(`/tests/${id}`, { method: "DELETE" }),
 
-  geolocate: (lat: number, lng: number) => request<{ city: City }>("/geolocate", {
-    method: "POST",
-    body: JSON.stringify({ lat, lng }),
-  }),
-
-  analyze: (platform: Platform, handle: string) =>
-    request<{
-      creator: Creator;
-      videos: Video[];
-      stats: AccountStats;
-      syncError?: { code: string; message: string };
-    }>("/creators/analyze", {
-      method: "POST",
-      body: JSON.stringify({ platform, handle }),
-    }),
-
-  getCreator: (platform: Platform, username: string) =>
-    request<{ creator: Creator; videos: Video[] }>(`/creators/${platform}/${username}`),
-
-  setRegion: (creatorId: string, region: string) =>
-    request<{ creator: Creator }>(`/creators/${creatorId}/region`, {
-      method: "PATCH",
-      body: JSON.stringify({ region }),
-    }),
-
-  search: (params: { keyword?: string; region?: string; platform?: Platform }) => {
-    const qs = new URLSearchParams();
-    if (params.keyword) qs.set("keyword", params.keyword);
-    if (params.region) qs.set("region", params.region);
-    if (params.platform) qs.set("platform", params.platform);
-    return request<{ results: SearchResult[] }>(`/search?${qs}`);
-  },
-
-  leaderboard: (params: {
-    platform?: Platform;
-    region?: string;
-    metric: "views" | "likes";
-    days?: number;
-    from?: string;
-    to?: string;
-  }) => {
-    const qs = new URLSearchParams();
-    if (params.platform) qs.set("platform", params.platform);
-    if (params.region) qs.set("region", params.region);
-    qs.set("metric", params.metric);
-    if (params.from) qs.set("from", params.from);
-    if (params.to) qs.set("to", params.to);
-    if (params.days) qs.set("days", String(params.days));
-    return request<{ results: LeaderboardEntry[]; range: { from: string; to: string } }>(
-      `/leaderboard?${qs}`,
-    );
-  },
-
-  studio: {
-    generate: (platform: Platform, topic: string, useOwnData: boolean) =>
-      request<{ ideas: ContentIdea[]; model: string; groundedOnOwnData: boolean }>("/studio/generate", {
+    addCreative: (testId: string, label: string, imageUrl: string, caption: string) =>
+      request<{ creative: Creative }>(`/tests/${testId}/creatives`, {
         method: "POST",
-        body: JSON.stringify({ platform, topic, useOwnData }),
+        body: JSON.stringify({ label, imageUrl, caption }),
       }),
-    listDrafts: () => request<{ drafts: Draft[] }>("/studio/drafts"),
-    createDraft: (input: {
-      platform: Platform;
-      creatorId?: string | null;
-      topic: string;
-      hook: string;
-      script: string;
-      caption: string;
-      hashtags: string[];
-      aiModel?: string | null;
-    }) =>
-      request<{ draft: Draft }>("/studio/drafts", {
-        method: "POST",
-        body: JSON.stringify(input),
-      }),
-    updateDraft: (
-      id: string,
-      patch: Partial<{
-        topic: string;
-        hook: string;
-        script: string;
-        caption: string;
-        hashtags: string[];
-        status: DraftStatus;
-        scheduledAt: string | null;
-        linkedVideoId: string | null;
-      }>,
-    ) =>
-      request<{ draft: Draft }>(`/studio/drafts/${id}`, {
-        method: "PATCH",
-        body: JSON.stringify(patch),
-      }),
-    deleteDraft: (id: string) => request<{ ok: true }>(`/studio/drafts/${id}`, { method: "DELETE" }),
-  },
+    removeCreative: (testId: string, creativeId: string) =>
+      request<{ ok: true }>(`/tests/${testId}/creatives/${creativeId}`, { method: "DELETE" }),
 
-  auth: {
-    status: (platform: Platform) => request<ConnectionStatus>(`/auth/${platform}/status`),
-    /** Not a fetch — a full-page navigation into the OAuth consent screen. */
-    startUrl: (platform: Platform) => `${API_BASE}/auth/${platform}/start`,
-    resync: (platform: Platform) =>
-      request<{ creator: Creator }>(`/auth/${platform}/resync`, { method: "POST" }),
-    disconnect: (platform: Platform) =>
-      request<{ ok: true }>(`/auth/${platform}/disconnect`, { method: "POST" }),
+    startSession: (testId: string) =>
+      request<{ session: ViewerSession }>(`/tests/${testId}/sessions`, { method: "POST" }),
+    sendReactions: (testId: string, sessionId: string, creativeId: string, samples: ReactionSample[]) =>
+      request<{ ok: true }>(`/tests/${testId}/sessions/${sessionId}/reactions`, {
+        method: "POST",
+        body: JSON.stringify({ creativeId, samples }),
+      }),
+    completeSession: (testId: string, sessionId: string) =>
+      request<{ ok: true }>(`/tests/${testId}/sessions/${sessionId}/complete`, { method: "POST" }),
+
+    results: (testId: string) =>
+      request<{ creatives: Creative[]; aggregates: CreativeAggregate[]; timeBuckets: TimeBucket[] }>(
+        `/tests/${testId}/results`,
+      ),
+    analyze: (testId: string) =>
+      request<{ verdict: NeuroVerdict; model: string }>(`/tests/${testId}/analyze`, { method: "POST" }),
   },
 };
 
