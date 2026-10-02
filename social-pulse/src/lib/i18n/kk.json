@@ -1,0 +1,113 @@
+{
+  "common": {
+    "demoBadge": "DEMO DATA — нақты аккаунт статистикасы емес",
+    "demoDisclaimer": "Бұл есеп тек қолжетімді жария деректер мен рұқсат етілген API нәтижелеріне негізделген. Деректер толық болмауы мүмкін",
+    "lastSynced": "Соңғы синхрондау: {{time}} бұрын",
+    "source": "Дереккөз",
+    "notEnoughData": "Дерек жеткіліксіз",
+    "apiUnavailable": "API арқылы қолжетімсіз",
+    "reconnect": "Қайта қосу",
+    "retry": "Қайта көру",
+    "loading": "Жүктелуде...",
+    "error": "Қате",
+    "noData": "Дерек жоқ"
+  },
+  "overview": {
+    "title": "Шолу",
+    "connectedAccount": "Байланысқан аккаунт",
+    "lastSynced": "Соңғы синхрондау: {{time}}",
+    "refresh": "Жаңарту",
+    "syncing": "Синхрондалуда...",
+    "trackedAccounts": "Бақыланатын аккаунттар",
+    "trackedSub": "{{connected}} қосылған + {{tracked}} бақыланатын",
+    "videosAnalyzed": "Талданған видеолар",
+    "videosSub": "Соңғы 7 күнде {{count}} қосылды",
+    "saved": "Сақталған",
+    "savedSub": "{{count}} аккаунт",
+    "reports": "Есептер",
+    "reportsSub": "{{ready}} дайын PDF",
+    "onboardingTitle": "Instagram немесе TikTok қосыңыз",
+    "onboardingDesc": "Нақты деректерді көру үшін аккаунтыңызды байланыстырыңыз. Тек ресми API, scraping жоқ.",
+    "connectInstagram": "Instagram қосу",
+    "connectTikTok": "TikTok қосу",
+    "tokenExpired": "Токен мерзімі бітті, қайта қосыңыз",
+    "notEnoughHistory": "Әлі жеткілікті тарих жоқ"
+  },
+  "search": {
+    "title": "Іздеу",
+    "placeholder": "Ниша, аккаунт, өнім немесе сілтеме іздеңіз...",
+    "platform": "Платформа",
+    "region": "Өңір",
+    "regionWarning": "Геолокация қате болуы мүмкін. Қолмен өзгертіңіз. Нақты мекенжай жиналмайды.",
+    "regionUnverified": "өңірі расталмаған",
+    "top5": "ТОП 5",
+    "sortBy": "Сұрыптау",
+    "sortOptions": {
+      "posts": "Жарияланым саны",
+      "views": "Қаралым",
+      "likes": "Лайк",
+      "engagement": "Engagement rate",
+      "date": "Соңғы жарияланым"
+    }
+  },
+  "analytics": {
+    "title": "Аккаунт аналитикасы",
+    "kpi": {
+      "followers": "Жазылушылар",
+      "totalViews": "Жалпы қаралым",
+      "totalLikes": "Жалпы лайк",
+      "totalComments": "Жалпы пікір",
+      "videos": "Видеолар",
+      "avgViews": "Орташа қаралым"
+    },
+    "tooltips": {
+      "followers": "Жазылушылар саны - ресми API арқылы",
+      "totalViews": "Барлық видеолардың жалпы қаралымы",
+      "engagementFormula": "Engagement Rate = (Likes + Comments + Shares) / Views × 100",
+      "accountEngagementFormula": "Engagement Rate = (Likes + Comments) / Followers × 100"
+    },
+    "videoTable": "Видео кестесі",
+    "ai": {
+      "realData": "Нақты дерек (API)",
+      "calculated": "Есептелген көрсеткіш",
+      "interpretation": "AI интерпретациясы",
+      "disclaimer": "AI қорытындысы тек caption және рұқсат етілген метрикаларға сүйенген"
+    }
+  },
+  "trends": {
+    "title": "Трендтерді табу",
+    "hashtags": "Жиі хэштегтер",
+    "commonWords": "Жиі сөздер",
+    "postingFrequency": "Жарияланым белсенділігі",
+    "viewsByVideo": "Видео бойынша қаралым",
+    "contentFormats": "Контент форматтары"
+  },
+  "competitors": {
+    "title": "Бәсекелестерді салыстыру",
+    "selectAccounts": "Аккаунттарды таңдаңыз",
+    "noData": "Дерек қолжетімсіз"
+  },
+  "reports": {
+    "title": "Есептер",
+    "pdf": "PDF Экспорт",
+    "csv": "CSV Экспорт",
+    "excel": "Excel Экспорт",
+    "disclaimer": "Бұл есеп тек қолжетімді жария деректер мен рұқсат етілген API нәтижелеріне негізделген. Деректер толық болмауы мүмкін"
+  },
+  "settings": {
+    "title": "Баптаулар",
+    "apiKeys": "API Кілттері • Тек backend-та",
+    "security": "Қауіпсіздік және Шектеулер",
+    "language": "Тіл"
+  },
+  "onboarding": {
+    "signUp": "Тіркелу",
+    "choosePlatform": "Платформа таңдаңыз",
+    "oauth": "OAuth арқылы қосылу",
+    "accountTypeCheck": "Аккаунт түрін тексеру",
+    "personalAccount": "Сіздің Instagram аккаунтыңыз Жеке (Personal). Business немесе Creator-ға ауысу керек.",
+    "businessGuide": "Business-ке ауысу нұсқаулығы",
+    "initialSync": "Алғашқы синхрондау (соңғы 90 күн)",
+    "syncProgress": "Синхрондалуда: {{count}} видео"
+  }
+}

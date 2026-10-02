@@ -1,0 +1,113 @@
+{
+  "common": {
+    "demoBadge": "DEMO DATA — не реальная статистика",
+    "demoDisclaimer": "Отчет основан только на доступных публичных данных и разрешенных API. Данные могут быть неполными",
+    "lastSynced": "Последняя синхронизация: {{time}} назад",
+    "source": "Источник",
+    "notEnoughData": "Недостаточно данных",
+    "apiUnavailable": "Недоступно через API",
+    "reconnect": "Переподключить",
+    "retry": "Повторить",
+    "loading": "Загрузка...",
+    "error": "Ошибка",
+    "noData": "Нет данных"
+  },
+  "overview": {
+    "title": "Обзор",
+    "connectedAccount": "Подключенный аккаунт",
+    "lastSynced": "Последняя синхронизация: {{time}}",
+    "refresh": "Обновить",
+    "syncing": "Синхронизация...",
+    "trackedAccounts": "Отслеживаемые аккаунты",
+    "trackedSub": "{{connected}} подключено + {{tracked}} отслеживается",
+    "videosAnalyzed": "Проанализировано видео",
+    "videosSub": "За последние 7 дней добавлено {{count}}",
+    "saved": "Сохранено",
+    "savedSub": "{{count}} аккаунтов",
+    "reports": "Отчеты",
+    "reportsSub": "{{ready}} готовых PDF",
+    "onboardingTitle": "Подключите Instagram или TikTok",
+    "onboardingDesc": "Подключите аккаунт, чтобы видеть реальные данные. Только официальные API, без скрапинга.",
+    "connectInstagram": "Подключить Instagram",
+    "connectTikTok": "Подключить TikTok",
+    "tokenExpired": "Токен истек, переподключите",
+    "notEnoughHistory": "Пока недостаточно истории"
+  },
+  "search": {
+    "title": "Поиск",
+    "placeholder": "Поиск ниши, аккаунта, товара или вставьте ссылку...",
+    "platform": "Платформа",
+    "region": "Регион",
+    "regionWarning": "Геолокация может быть неточной. Измените вручную. Точный адрес не собирается.",
+    "regionUnverified": "регион не подтвержден",
+    "top5": "ТОП 5",
+    "sortBy": "Сортировка",
+    "sortOptions": {
+      "posts": "Количество публикаций",
+      "views": "Просмотры",
+      "likes": "Лайки",
+      "engagement": "Engagement rate",
+      "date": "Последняя публикация"
+    }
+  },
+  "analytics": {
+    "title": "Аналитика аккаунта",
+    "kpi": {
+      "followers": "Подписчики",
+      "totalViews": "Всего просмотров",
+      "totalLikes": "Всего лайков",
+      "totalComments": "Всего комментариев",
+      "videos": "Видео",
+      "avgViews": "Средний просмотр"
+    },
+    "tooltips": {
+      "followers": "Количество подписчиков через официальный API",
+      "totalViews": "Общее количество просмотров всех видео",
+      "engagementFormula": "Engagement Rate = (Likes + Comments + Shares) / Views × 100",
+      "accountEngagementFormula": "Engagement Rate = (Likes + Comments) / Followers × 100"
+    },
+    "videoTable": "Таблица видео",
+    "ai": {
+      "realData": "Реальные данные (API)",
+      "calculated": "Вычисленный показатель",
+      "interpretation": "AI интерпретация",
+      "disclaimer": "AI выводы основаны только на caption и разрешенных метриках"
+    }
+  },
+  "trends": {
+    "title": "Поиск трендов",
+    "hashtags": "Частые хештеги",
+    "commonWords": "Частые слова",
+    "postingFrequency": "Активность публикаций",
+    "viewsByVideo": "Просмотры по видео",
+    "contentFormats": "Форматы контента"
+  },
+  "competitors": {
+    "title": "Сравнение конкурентов",
+    "selectAccounts": "Выберите аккаунты",
+    "noData": "Данные недоступны"
+  },
+  "reports": {
+    "title": "Отчеты",
+    "pdf": "Экспорт PDF",
+    "csv": "Экспорт CSV",
+    "excel": "Экспорт Excel",
+    "disclaimer": "Отчет основан только на доступных публичных данных и разрешенных API. Данные могут быть неполными"
+  },
+  "settings": {
+    "title": "Настройки",
+    "apiKeys": "API Ключи • Только на backend",
+    "security": "Безопасность и ограничения",
+    "language": "Язык"
+  },
+  "onboarding": {
+    "signUp": "Регистрация",
+    "choosePlatform": "Выберите платформу",
+    "oauth": "Подключение через OAuth",
+    "accountTypeCheck": "Проверка типа аккаунта",
+    "personalAccount": "Ваш Instagram аккаунт Личный (Personal). Нужно переключиться на Business или Creator.",
+    "businessGuide": "Гайд по переходу на Business",
+    "initialSync": "Первичная синхронизация (последние 90 дней)",
+    "syncProgress": "Синхронизация: {{count}} видео"
+  }
+}

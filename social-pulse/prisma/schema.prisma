@@ -1,5 +1,5 @@
-// Prisma schema for SOCIAL PULSE
-// For demo, app works without DB (mock data). For production, use PostgreSQL
+// SOCIAL PULSE — PRODUCTION SCHEMA
+// Official APIs only, no scraping, tokens encrypted at rest AES-256-GCM
 
 generator client {
   provider = "prisma-client-js"
@@ -11,108 +11,212 @@ datasource db {
 }
 
 model User {
-  id            String    @id @default(cuid())
-  email         String    @unique
-  name          String?
-  image         String?
-  role          Role      @default(USER)
-  accounts      SavedAccount[]
-  searches      Search[]
-  reports       Report[]
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  image     String?
+  locale    String   @default("kk") // kk, ru, en
+  plan      Plan     @default(FREE)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  connectedAccounts ConnectedAccount[]
+  trackedAccounts   TrackedAccount[]
+  savedItems        SavedItem[]
+  searches          Search[]
+  reports           Report[]
+  syncJobs          SyncJob[]
+
+  @@index([email])
 }
 
-model SavedAccount {
-  id            String   @id @default(cuid())
-  userId        String
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  username      String
-  platform      Platform
-  displayName   String?
-  region        String?  @default("all")
-  isDemo        Boolean  @default(true)
-  createdAt     DateTime @default(now())
+model ConnectedAccount {
+  id                    String               @id @default(cuid())
+  userId                String
+  user                  User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  platform              Platform
+  externalId            String // IG user ID or TikTok open_id
+  username              String
+  displayName           String?
+  avatarUrl             String?
+  tokenEncrypted        String               @db.Text // AES-256-GCM encrypted
+  refreshTokenEncrypted String?              @db.Text // TikTok refresh token
+  tokenExpiresAt        DateTime
+  status                ConnectedStatus      @default(ACTIVE)
+  lastSyncedAt          DateTime?
+  createdAt             DateTime             @default(now())
+  updatedAt             DateTime             @updatedAt
 
-  @@unique([userId, username, platform])
+  media                 Media[]
+  accountSnapshots      AccountMetricsSnapshot[]
+  syncJobs              SyncJob[]
+
+  @@unique([userId, platform, externalId])
+  @@index([userId])
+  @@index([platform, externalId])
+  @@index([status])
+}
+
+model TrackedAccount {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  platform   Platform
+  username   String
+  externalId String? // Business Discovery may return ID
+  addedAt    DateTime @default(now())
+
+  media      Media[]
+
+  @@unique([userId, platform, username])
+  @@index([userId])
+  @@index([platform, username])
+}
+
+model Media {
+  id           String   @id @default(cuid())
+  accountRef   String? // ConnectedAccount.id or TrackedAccount.id (polymorphic via accountType)
+  accountType  AccountType @default(CONNECTED)
+  platform     Platform
+  externalId   String // IG media ID or TikTok video ID
+  type         MediaType @default(VIDEO)
+  caption      String?  @db.Text
+  postedAt     DateTime?
+  permalink    String?  @db.Text
+  thumbnailUrl String?  @db.Text
+
+  metrics      MediaMetricsSnapshot[]
+  createdAt    DateTime @default(now())
+
+  @@unique([platform, externalId])
+  @@index([accountRef, postedAt])
+  @@index([platform, externalId])
+}
+
+model MediaMetricsSnapshot {
+  id         String   @id @default(cuid())
+  mediaId    String
+  media      Media    @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  capturedAt DateTime @default(now())
+  views      Int?
+  likes      Int?
+  comments   Int?
+  shares     Int?
+  saves      Int?
+  reach      Int?
+
+  @@index([mediaId, capturedAt])
+}
+
+model AccountMetricsSnapshot {
+  id             String   @id @default(cuid())
+  accountRef     String
+  account        ConnectedAccount @relation(fields: [accountRef], references: [id], onDelete: Cascade)
+  capturedAt     DateTime @default(now())
+  followers      Int?
+  following      Int?
+  mediaCount     Int?
+  engagementRate Float?
+
+  @@index([accountRef, capturedAt])
+}
+
+model SavedItem {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  itemType  SavedType
+  itemRef   String // account username or media external_id
+  platform  Platform @default(ALL)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([userId, itemType])
 }
 
 model Search {
-  id            String     @id @default(cuid())
-  userId        String?
-  user          User?      @relation(fields: [userId], references: [id])
-  query         String
-  platform      Platform   @default(ALL)
-  searchType    SearchType @default(NICHE)
-  region        String     @default("all")
-  resultsCount  Int        @default(0)
-  createdAt     DateTime   @default(now())
-}
+  id           String     @id @default(cuid())
+  userId       String?
+  user         User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
+  query        String
+  platform     Platform   @default(ALL)
+  searchType   SearchType @default(NICHE)
+  region       String     @default("all")
+  resultsCount Int        @default(0)
+  createdAt    DateTime   @default(now())
 
-model AccountAnalytics {
-  id            String   @id @default(cuid())
-  username      String
-  platform      Platform
-  followers     Int?
-  totalViews    Int?
-  totalLikes    Int?
-  totalComments Int?
-  totalVideos   Int?
-  avgViews      Int?
-  engagementRate Float?
-  lastPostDate  DateTime?
-  source        String   @default("demo")
-  isDemo        Boolean  @default(true)
-  lastUpdated   DateTime @default(now())
-  createdAt     DateTime @default(now())
-
-  @@unique([username, platform])
-}
-
-model Video {
-  id            String   @id @default(cuid())
-  accountId     String
-  platform      Platform
-  title         String?
-  caption       String?
-  url           String?
-  thumbnail     String?
-  views         Int?
-  likes         Int?
-  comments      Int?
-  shares        Int?
-  engagementRate Float?
-  publishedAt   DateTime?
-  hashtags      String[] @default([])
-  contentType   String?
-  isDemo        Boolean  @default(true)
-  createdAt     DateTime @default(now())
+  @@index([userId])
+  @@index([query])
 }
 
 model Report {
-  id            String   @id @default(cuid())
-  userId        String
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  title         String
+  id              String       @id @default(cuid())
+  userId          String
+  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title           String
   accountUsername String?
-  platform      Platform? @default(ALL)
-  dateFrom      DateTime?
-  dateTo        DateTime?
-  format        ReportFormat @default(PDF)
-  data          Json?
-  isDemo        Boolean  @default(true)
-  createdAt     DateTime @default(now())
+  platform        Platform?    @default(ALL)
+  format          ReportFormat @default(PDF)
+  status          ReportStatus @default(PENDING)
+  fileUrl         String?      @db.Text
+  periodFrom      DateTime?
+  periodTo        DateTime?
+  data            Json?
+  createdAt       DateTime     @default(now())
+
+  @@index([userId])
+  @@index([userId, status])
 }
 
-enum Role {
-  USER
-  ADMIN
+model SyncJob {
+  id          String        @id @default(cuid())
+  userId      String?
+  user        User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  accountRef  String
+  account     ConnectedAccount @relation(fields: [accountRef], references: [id], onDelete: Cascade)
+  type        SyncType
+  startedAt   DateTime      @default(now())
+  finishedAt  DateTime?
+  itemsSynced Int           @default(0)
+  status      SyncStatus    @default(RUNNING)
+  error       String?       @db.Text
+
+  @@index([accountRef])
+  @@index([accountRef, type])
+  @@index([status])
+}
+
+enum Plan {
+  FREE
+  PRO
 }
 
 enum Platform {
   ALL
   INSTAGRAM
   TIKTOK
+}
+
+enum ConnectedStatus {
+  ACTIVE
+  EXPIRED
+  ERROR
+}
+
+enum AccountType {
+  CONNECTED
+  TRACKED
+}
+
+enum MediaType {
+  IMAGE
+  VIDEO
+  CAROUSEL
+}
+
+enum SavedType {
+  ACCOUNT
+  MEDIA
 }
 
 enum SearchType {
@@ -125,4 +229,24 @@ enum ReportFormat {
   PDF
   CSV
   EXCEL
+  WEB
+}
+
+enum ReportStatus {
+  PENDING
+  READY
+  FAILED
+}
+
+enum SyncType {
+  INITIAL
+  ACCOUNT_METRICS
+  MEDIA_METRICS
+  FULL
+}
+
+enum SyncStatus {
+  RUNNING
+  SUCCESS
+  FAILED
 }

@@ -1,0 +1,113 @@
+{
+  "common": {
+    "demoBadge": "DEMO DATA — not real statistics",
+    "demoDisclaimer": "This report is based only on available public data and authorized APIs. Data may be incomplete",
+    "lastSynced": "Last synced: {{time}} ago",
+    "source": "Source",
+    "notEnoughData": "Not enough data",
+    "apiUnavailable": "Unavailable via API",
+    "reconnect": "Reconnect",
+    "retry": "Retry",
+    "loading": "Loading...",
+    "error": "Error",
+    "noData": "No data"
+  },
+  "overview": {
+    "title": "Overview",
+    "connectedAccount": "Connected Account",
+    "lastSynced": "Last synced: {{time}}",
+    "refresh": "Refresh",
+    "syncing": "Syncing...",
+    "trackedAccounts": "Tracked Accounts",
+    "trackedSub": "{{connected}} connected + {{tracked}} tracked",
+    "videosAnalyzed": "Videos Analyzed",
+    "videosSub": "{{count}} added in last 7 days",
+    "saved": "Saved",
+    "savedSub": "{{count}} accounts",
+    "reports": "Reports",
+    "reportsSub": "{{ready}} ready PDFs",
+    "onboardingTitle": "Connect Instagram or TikTok",
+    "onboardingDesc": "Connect your account to see real data. Official APIs only, no scraping.",
+    "connectInstagram": "Connect Instagram",
+    "connectTikTok": "Connect TikTok",
+    "tokenExpired": "Token expired, please reconnect",
+    "notEnoughHistory": "Not enough history yet"
+  },
+  "search": {
+    "title": "Search",
+    "placeholder": "Search a niche, account, product or paste a link...",
+    "platform": "Platform",
+    "region": "Region",
+    "regionWarning": "Geolocation may be inaccurate. Change manually. Exact address not collected.",
+    "regionUnverified": "region unverified",
+    "top5": "TOP 5",
+    "sortBy": "Sort by",
+    "sortOptions": {
+      "posts": "Post count",
+      "views": "Views",
+      "likes": "Likes",
+      "engagement": "Engagement rate",
+      "date": "Last post"
+    }
+  },
+  "analytics": {
+    "title": "Account Analytics",
+    "kpi": {
+      "followers": "Followers",
+      "totalViews": "Total views",
+      "totalLikes": "Total likes",
+      "totalComments": "Total comments",
+      "videos": "Videos",
+      "avgViews": "Avg views"
+    },
+    "tooltips": {
+      "followers": "Followers count via official API",
+      "totalViews": "Total views of all videos",
+      "engagementFormula": "Engagement Rate = (Likes + Comments + Shares) / Views × 100",
+      "accountEngagementFormula": "Engagement Rate = (Likes + Comments) / Followers × 100"
+    },
+    "videoTable": "Video Table",
+    "ai": {
+      "realData": "Real Data (API)",
+      "calculated": "Calculated Metric",
+      "interpretation": "AI Interpretation",
+      "disclaimer": "AI conclusions based only on caption and allowed metrics"
+    }
+  },
+  "trends": {
+    "title": "Trend Discovery",
+    "hashtags": "Top Hashtags",
+    "commonWords": "Common Words",
+    "postingFrequency": "Posting Frequency",
+    "viewsByVideo": "Views by Video",
+    "contentFormats": "Content Formats"
+  },
+  "competitors": {
+    "title": "Competitor Comparison",
+    "selectAccounts": "Select accounts",
+    "noData": "Data unavailable"
+  },
+  "reports": {
+    "title": "Reports",
+    "pdf": "PDF Export",
+    "csv": "CSV Export",
+    "excel": "Excel Export",
+    "disclaimer": "This report is based only on available public data and authorized APIs. Data may be incomplete"
+  },
+  "settings": {
+    "title": "Settings",
+    "apiKeys": "API Keys • Backend only",
+    "security": "Security & Limitations",
+    "language": "Language"
+  },
+  "onboarding": {
+    "signUp": "Sign up",
+    "choosePlatform": "Choose platform",
+    "oauth": "Connect via OAuth",
+    "accountTypeCheck": "Account type check",
+    "personalAccount": "Your Instagram account is Personal. You need to switch to Business or Creator.",
+    "businessGuide": "Guide to switch to Business",
+    "initialSync": "Initial sync (last 90 days)",
+    "syncProgress": "Syncing: {{count}} videos"
+  }
+}
