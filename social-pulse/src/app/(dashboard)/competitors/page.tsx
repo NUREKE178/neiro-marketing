@@ -14,7 +14,7 @@ export default function CompetitorsPage() {
 
   return (
     <div className="p-8 space-y-8 max-w-7xl mx-auto">
-      <h1 className="text-4xl font-black uppercase tracking-tighter">COMPETITOR COMPARISON <Badge variant="demo">DEMO DATA</Badge></h1>
+      <h1 className="text-4xl font-black uppercase tracking-tighter">COMPETITOR COMPARISON</h1>
 
       <Card className="bg-primary">
         <CardContent className="p-4 flex gap-2 flex-wrap">

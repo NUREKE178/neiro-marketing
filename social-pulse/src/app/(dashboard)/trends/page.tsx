@@ -12,7 +12,7 @@ export default function TrendsPage() {
   return (
     <div className="p-8 space-y-8 max-w-7xl mx-auto">
       <div className="flex items-center justify-between">
-        <h1 className="text-4xl font-black uppercase tracking-tighter">TREND DISCOVERY <Badge variant="demo">DEMO DATA</Badge></h1>
+        <h1 className="text-4xl font-black uppercase tracking-tighter">TREND DISCOVERY</h1>
         <div className="flex gap-2">
           <input value={niche} onChange={(e) => setNiche(e.target.value)} placeholder="Тақырып: ойыншық, кофе, косметика..." className="border-3 border-black px-4 py-2 font-bold w-80" />
           <Button variant="black">ІЗДЕУ →</Button>

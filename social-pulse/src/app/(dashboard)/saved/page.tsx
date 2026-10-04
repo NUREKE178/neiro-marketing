@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 export default function SavedPage() {
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-6">
-      <h1 className="text-4xl font-black uppercase">SAVED ACCOUNTS <Badge variant="demo">DEMO DATA</Badge></h1>
+      <h1 className="text-4xl font-black uppercase">SAVED ACCOUNTS</h1>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {mockAccounts.slice(0,3).map(acc => (
           <Card key={acc.id}>
