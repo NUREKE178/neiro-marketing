@@ -1,0 +1,62 @@
+.tile {
+  border: var(--border-w) solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  padding: var(--space-4);
+  background: var(--color-surface);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.label {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  opacity: 0.7;
+}
+
+.icon {
+  opacity: 0.6;
+}
+
+.value {
+  font-family: var(--font-display);
+  font-size: clamp(1.4rem, 3vw, 2rem);
+  font-weight: 700;
+  line-height: 1;
+  overflow-wrap: anywhere;
+}
+
+.sub {
+  font-size: 0.78rem;
+  opacity: 0.65;
+}
+
+.surface {
+  background: var(--color-surface);
+}
+.primary {
+  background: var(--color-primary);
+  color: var(--color-primary-ink);
+}
+.secondary {
+  background: var(--color-secondary);
+  color: var(--color-secondary-ink);
+}
+.accent {
+  background: var(--color-accent);
+  color: var(--color-accent-ink);
+}
+.lime {
+  background: var(--color-lime);
+  color: var(--color-lime-ink);
+}

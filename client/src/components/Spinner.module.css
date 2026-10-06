@@ -1,0 +1,42 @@
+.wrap {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  justify-content: center;
+}
+
+.box {
+  width: 14px;
+  height: 14px;
+  background: var(--color-primary);
+  border: 2px solid var(--color-border);
+  animation: bounce 0.9s infinite ease-in-out;
+}
+
+.box:nth-child(2) {
+  background: var(--color-secondary);
+  animation-delay: 0.15s;
+}
+
+.box:nth-child(3) {
+  background: var(--color-accent);
+  animation-delay: 0.3s;
+}
+
+.label {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  margin-left: var(--space-2);
+}
+
+@keyframes bounce {
+  0%,
+  80%,
+  100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-10px);
+  }
+}

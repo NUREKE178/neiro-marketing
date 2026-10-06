@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.env
+.env.local
+.vercel/
+
+# sqlite runtime data
+server/data/
+
+# editor/OS
+.DS_Store
+*.log

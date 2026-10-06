@@ -1,0 +1,42 @@
+name: Windows app
+
+# Builds the Tauri desktop app natively on a Windows runner (more reliable
+# than cross-compiling from Linux — see src-tauri/README or the repo root
+# README for how the one-off Linux cross-build was done locally).
+on:
+  push:
+    branches: [main]
+    paths:
+      - "client/**"
+      - ".github/workflows/windows.yml"
+  workflow_dispatch: {}
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build Tauri app (NSIS installer + .exe)
+        working-directory: client
+        run: npx tauri build --bundles nsis
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: neiro-windows
+          path: |
+            client/src-tauri/target/release/bundle/nsis/*.exe
+            client/src-tauri/target/release/*.exe
+          if-no-files-found: error
