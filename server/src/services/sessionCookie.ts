@@ -35,8 +35,7 @@ export function verify(signed: string): string | null {
 /**
  * Returns the current browser's owner id, creating + setting the cookie if
  * this is a new visitor. Returns null if SESSION_SECRET isn't configured —
- * callers treat that as "authorized-import isn't available", matching how
- * a missing RAPIDAPI_KEY is handled, never a crash.
+ * callers treat that as a clean "not configured" state, never a crash.
  */
 export function getOrCreateOwnerId(req: Request, res: Response): string | null {
   if (!SECRET) return null;
